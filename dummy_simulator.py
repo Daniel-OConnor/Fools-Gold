@@ -2,16 +2,25 @@ import torch
 from simulator import Simulator
 import math
 
-def guassian(x, mean, sd):
+
+def gaussian(x, mean, sd):
     return 1/(abs(sd)*math.sqrt(2*math.pi)) * torch.exp(-0.5*(x-mean)*(x-mean)/(sd*sd))
 
+
 class DummySimulator(Simulator):
+    x_size = 1
+    theta_size = 1
+
     def simulate(self, theta):
         r0 = torch.normal(theta, torch.tensor(1.))
-        p0 = guassian(r0, theta, 1)
         r1 = torch.normal(torch.tensor(0.), r0)
-        p1 = guassian(r1, 0, r0)
-        return r1, [p0, p1]
+        return [r0, r1]
+
+    def p(self, z, theta):
+        p0 = gaussian(z[0], theta, 1)
+        p1 = gaussian(z[1], 0, z[0])
+        return [p0, p1]
+
 
 if __name__ == "__main__":
     dummy = DummySimulator()
