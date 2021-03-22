@@ -1,7 +1,6 @@
 import torch
 
 class Ratio(torch.nn.Module):
-
     def __init__(self, x_size, theta_size, hidden_size):
         super(Ratio, self).__init__()
         self.linear_x = torch.nn.Linear(x_size, hidden_size)

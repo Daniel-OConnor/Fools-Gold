@@ -2,17 +2,13 @@ import torch
 from torch import autograd
 from abc import ABCMeta, abstractmethod
 
-
 class Simulator:
-    # returns [z_i for each i]
     @abstractmethod
-    def simulate(self, theta):
-        pass
-
-    # Takes the list of latents, and theta
-    # returns [p(z_i|theta, z_j, j<i) for each i]
-    @abstractmethod
-    def p(self, zs, theta):
+    def simulate(self, θ):
+        """
+        Perform a single run of the simulator
+        returns a torch.Tensor zs, where zs[i] is the i-th latent
+        """
         pass
 
     @property
@@ -22,48 +18,66 @@ class Simulator:
 
     @property
     @abstractmethod
-    def theta_size(self):
+    def θ_size(self):
         pass
 
-    def _calculate_T(self, ps, theta):
-        total = torch.tensor(0., requires_grad=True)
-        for p in ps:
-            total = total + torch.log(p)
-        total.backward()
-        return theta.grad.detach()
-
-    def sample_T(self, theta):
-        theta = theta.detach()
-        theta.requires_grad = True
-        z = self.simulate(theta)
-        t_score = self._calculate_T(self.p(z, theta), theta)
-        return z[-1].detach(), t_score
-
-    def sample_R(self, theta0, theta1):
-        with torch.no_grad():
-            z = self.simulate(theta1)
-            ps0 = self.p(z, theta0)
-            ps1 = self.p(z, theta1)
-            assert(len(ps0) == len(ps1))
-            r_score = torch.tensor(1.)
-            for i in range(len(ps0)):
-                r_score = r_score * (ps0[i]/ps1[i])
-            return z[-1], r_score
-
-    def sample_both(self, theta0, theta1):
-        theta0 = theta0.detach()
-        theta1 = theta1.detach()
-        theta0.requires_grad=True
-        theta1.requires_grad=True
+class RatioSimulator(Simulator):
+    @abstractmethod
+    def ratio(self, zs, θ_0, θ_1, with_grad=False):
+        """
+        Calculate conditional probability ratios for a run of the simulator
         
-        z = self.simulate(theta1)
-        ps0 = self.p(z, theta0)
-        ps1 = self.p(z, theta1)
+        Arguments:
+            zs:        torch.Tensor, latent variables
+            θ_0:       torch.Tensor, parameters
+            θ_1:       torch.Tensor, parameters
+            with_grad: bool        , set to false if gradient not needed:
+                                        * the computation should be run with torch.no_grad()
+        Returns:
+            rs: torch.Tensor, where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
+        """
+        pass
+    
+    def eval_ratio(self, zs, θ_0, θ_1):
+        """returns r(x, zs | θ_0, θ_1)"""
+        return torch.prod(self.ratio(zs, θ_0, θ_1))
+    
+    def eval_score(self, zs, θ_0, θ_1):
+        """
+        (adapted from _calculate_T (Daniel))
+        Returns:
+            * score, t(x, zs | θ_0, θ_1)
+            * ratio, r(x, zs | θ_0, θ_1)
+        """
+        ratio = torch.prod(self.__ratio(zs, θ_0, θ_1, True))
+        log_ratio = torch.log(ratio)
+        log_ratio.backward()
+        return θ_0.grad.detach(), ratio
 
-        assert(len(ps0) == len(ps1))
-        r_score = torch.tensor(1.)
-        for i in range(len(ps0)):
-            r_score *= (ps0[i]/ps1[i])
+class ProbSimulator(Simulator):
+    @abstractmethod
+    def p(self, zs, θ, with_grad=False):
+        """
+        Calculate conditional probabilities for a run of the simulator
+        
+        Arguments:
+            zs:        torch.Tensor, latent variables
+            θ:         torch.Tensor, parameters
+            with_grad: bool        , set to false if gradient not needed:
+                                        * the computation should be run with torch.no_grad()
+        Returns:
+            ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
+        """
+        pass
 
-        t_score = self._calculate_T(ps1, theta1)
-        return z[-1].detach(), t_score, r_score
+    def eval_score(self, zs, θ):
+        """
+        (adapted from _calculate_T (Daniel))
+        Returns:
+            * score, t(x, zs | θ)
+            * joint, p(x, zs | θ)
+        """
+        p = torch.prod(self.p(zs, θ, True))
+        log_p = torch.log(p)
+        log_p.backward()
+        return θ.grad.detach(), p
