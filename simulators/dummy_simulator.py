@@ -1,5 +1,5 @@
 import torch
-from simulator import RatioSimulator, ProbSimulator
+from .simulator import RatioSimulator, ProbSimulator
 from contextlib import nullcontext
 import math
 
@@ -31,9 +31,9 @@ class DummySimulator(RatioSimulator, ProbSimulator):
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         context = nullcontext if with_grad else torch.no_grad
-        with context():
-            p0 = gaussian(zs[0], θ, torch.tensor(1))
-            p1 = gaussian(zs[1], 0, zs[0])
+        #with context():
+        p0 = gaussian(zs[0], θ, torch.tensor(1))
+        p1 = gaussian(zs[1], 0, zs[0])
         return torch.tensor([p0, p1])
 
     def ratio(self, zs, θ_0, θ_1, with_grad=False):
@@ -50,9 +50,9 @@ class DummySimulator(RatioSimulator, ProbSimulator):
             rs: torch.Tensor, where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
         """
         context = nullcontext if with_grad else torch.no_grad
-        with context():
-            r0 = gaussian(zs[0], θ_0, torch.tensor(1)) / gaussian(zs[0], θ_1, torch.tensor(1))
-            r1 = gaussian(zs[1], 0, zs[0]) / gaussian(zs[1], 0, zs[0])
+        #with context():
+        r0 = gaussian(zs[0], θ_0, torch.tensor(1)) / gaussian(zs[0], θ_1, torch.tensor(1))
+        r1 = gaussian(zs[1], 0, zs[0]) / gaussian(zs[1], 0, zs[0])
         return torch.tensor([r0, r1])
 
 if __name__ == "__main__":
