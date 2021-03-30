@@ -1,3 +1,4 @@
+# %% SETUP
 from simulators.dummy_simulator import DummySimulator
 from loss.rolr import rolr
 from ratio import Ratio
@@ -27,6 +28,8 @@ prior = lambda: torch.rand(1).to(device)
 sim = DummySimulator()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+
+# %% GENERATE DATA
 # generate pairs of priors
 priors = [(prior(), prior()) for _ in range(num_priors)]
 
@@ -50,7 +53,7 @@ train_data, test_data = data[:num_train_samples], data[num_train_samples:]
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 
-# train
+# %% TRAIN
 print("Training...")
 for i in range(epochs):
     print("Epoch {}...".format(i))
@@ -70,7 +73,7 @@ for i in range(epochs):
         epoch_loss += loss.item() * batch_sz
         train_iter.set_description("Average loss {}".format(epoch_loss/num_samples))
 
-# test
+# %% TEST
 print("Testing...")
 x, ratio_true, ratio_pred = np.zeros((0)), np.zeros((0)), np.zeros((0))
 with torch.no_grad(): # we can only use this when we don't need the score (only the ratio)
@@ -91,7 +94,7 @@ with torch.no_grad(): # we can only use this when we don't need the score (only 
         ratio_pred = np.concatenate((ratio_pred, r_hat))
         x = np.concatenate((x, xs))
 
-# ugly visualisation code - ignore
+# %% ugly visualisation code - ignore
 import matplotlib.pyplot as plt
 import numpy as np
 # from scipy.stats import gaussian_kde
