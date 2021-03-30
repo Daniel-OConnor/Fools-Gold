@@ -9,7 +9,6 @@ class Ratio(torch.nn.Module):
         self.linear_out = torch.nn.Linear(hidden_size, 1)
 
     def forward(self, x, theta0, theta1):
-        batch_sz = x.shape[0]
         x = x.unsqueeze(1)
         theta0 = theta0
         theta1 = theta1

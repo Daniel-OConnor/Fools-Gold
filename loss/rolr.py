@@ -2,7 +2,7 @@ import torch
 
 def rolr(input, target, labels):
     v0 = torch.pow(target - input, 2)
-    v1 = torch.pow((1/target)-(1/input), 2)
+    v1 = torch.pow((1/target)-input, 2)
     v2_0 = labels * v0
     v2_1 =  (1 - labels) * v1
     return torch.mean(v2_0 + v2_1)
