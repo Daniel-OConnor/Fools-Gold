@@ -23,7 +23,7 @@ class Simulator:
 
 class RatioSimulator(Simulator):
     @abstractmethod
-    def ratio(self, zs, θ_0, θ_1, with_grad=False):
+    def ratio(self, zs, θ_0, θ_1):
         """
         Calculate conditional probability ratios for a run of the simulator
         
@@ -31,17 +31,15 @@ class RatioSimulator(Simulator):
             zs:        torch.Tensor, latent variables
             θ_0:       torch.Tensor, parameters
             θ_1:       torch.Tensor, parameters
-            with_grad: bool        , set to false if gradient not needed:
-                                        * the computation should be run with torch.no_grad()
         Returns:
             rs: torch.Tensor, where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
         """
         pass
-    
+
     def eval_ratio(self, zs, θ_0, θ_1):
         """returns r(x, zs | θ_0, θ_1)"""
         return torch.prod(self.ratio(zs, θ_0, θ_1))
-    
+
     def eval_score(self, zs, θ_0, θ_1):
         """
         (adapted from _calculate_T (Daniel))
@@ -49,26 +47,28 @@ class RatioSimulator(Simulator):
             * score, t(x, zs | θ_0, θ_1)
             * ratio, r(x, zs | θ_0, θ_1)
         """
+
         ratio = torch.prod(self.__ratio(zs, θ_0, θ_1, True))
         log_ratio = torch.log(ratio)
         log_ratio.backward()
         return θ_0.grad.detach(), ratio
 
-class ProbSimulator(Simulator):
+class ProbSimulator(RatioSimulator):
     @abstractmethod
-    def p(self, zs, θ, with_grad=False):
+    def p(self, zs, θ):
         """
         Calculate conditional probabilities for a run of the simulator
         
         Arguments:
             zs:        torch.Tensor, latent variables
             θ:         torch.Tensor, parameters
-            with_grad: bool        , set to false if gradient not needed:
-                                        * the computation should be run with torch.no_grad()
         Returns:
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         pass
+
+    def ratio(self, zs, θ_0, θ_1):
+        return self.p(zs, θ_0) / self.p(zs, θ_1)
 
     def eval_score(self, zs, θ):
         """
