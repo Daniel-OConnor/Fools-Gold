@@ -1,0 +1,25 @@
+To run 3Blue1Brown SIR model as it is currently implemented:
+
+> install manimlib (e.g. via pip install)
+> install chocolatey package manager (using PowerShell for Windows)
+https://chocolatey.org/install
+https://docs.manim.community/en/v0.4.0/installation/win.html#installing-using-chocolatey
+> use choco manager to install ffmpeg for the animated simulation to run
+> call python sir_simple_test.py
+
+The test script will currently run a very simple single-city, 10-person covid simulation with no social distancing.
+
+I will work on making the simulation configurable directly by calling an instance of one of the "RunSimpleSimulationX" classes
+
+To run the simulation and retrieve latent data:
+> instance a "RunSimpleSimulationX" class
+> call .add_simulation()
+> get returned data from call to .construct()
+
+Latent data is currently of the form:
+
+{i : zi | 0 <= i < n} where n = number of steps to run simulation (n is variable, which may be a problem...)
+
+Each dictionary entry has value zi, which is a list of each person's status and location
+
+e.g. ["S", -2.94, 1.16, 0, "I", 3.56, -1, 23, 0, ...]
