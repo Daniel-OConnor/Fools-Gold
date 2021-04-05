@@ -11,7 +11,7 @@ def train(model, dataset, loss_function, epochs, optimizer):
         epoch_loss, num_samples = 0.0, 0
         for batch in train_iter:
             labels, thetas, runs, *targets = batch
-            xs = runs[:, -1]
+            xs = runs[:, [-1]]
             batch_sz = xs.shape[0]
             y_hat = model(xs, *thetas)
             loss = loss_function(y_hat, labels, thetas, *targets) * batch_sz
