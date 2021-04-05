@@ -31,5 +31,5 @@ class DummySimulator(ProbSimulator):
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         p0 = gaussian(zs[0], θ, torch.tensor(1))
-        p1 = gaussian(zs[1], 0, zs[0])
-        return torch.tensor([p0, p1])
+        p1 = gaussian(zs[1], 0, zs[[0]])
+        return torch.cat([p0, p1])

@@ -1,13 +1,12 @@
 # %% SETUP
 from simulators.dummy_simulator import DummySimulator
-from loss.rolr import rolr
-from data_generators import ratio_dataset
+from loss.rolr import rolr, rascal
+from data_generators import ratio_dataset, score_and_ratio_dataset
 from trainer import train
 from ratio import Ratio
 from tqdm import tqdm
 import torch
-from random import random, shuffle
-from torch.utils.data import DataLoader
+from functools import partial
 import numpy as np
 from scipy.stats import gaussian_kde
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ TRAIN = True
 batch_size = 32
 epochs = 2
 train_fraction = 0.9
-num_priors = 1000
+num_priors = 10000
 num_sims_per_prior_pair = 1
 learning_rate = 0.0002
 num_train_priors = int(num_priors * train_fraction)
@@ -38,11 +37,11 @@ model.load_state_dict(torch.load("model.pt"))
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = ratio_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
-    test_loader = ratio_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, False)
+    train_loader = score_and_ratio_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True, True)
+    #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, rolr, epochs, optimizer)
+    train(model, train_loader, partial(rascal, alpha=0.1), epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:
@@ -61,8 +60,8 @@ else:
 theta0 = 0.2
 theta1 = 0.8
 # generate data for a single pair of thetas
-visual_runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(40000))])
-visual_runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(40000))])
+visual_runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(10000))])
+visual_runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(10000))])
 
 xs = np.linspace(-5, 5, 500)
 density_true0 = gaussian_kde(visual_runs0)

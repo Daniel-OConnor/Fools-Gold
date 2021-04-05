@@ -20,24 +20,25 @@ def score_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_size, s
     print("Generating data...")
     data = []
     for _ in tqdm(range(num_priors)):
-        ts = (prior(), prior())
+        t = (prior(),)
         for _ in range(num_sims_per_prior_pair):
-            k = 0 if random() < 0.5 else 1
-            zs = sim.simulate(ts[k])
-            score = sim.eval_score(zs, ts[0], ts[1])
-            data.append((k, ts, zs, score))
+            zs = sim.simulate(t[0])
+            score = sim.eval_score(zs, t[0])
+            data.append((0, t, zs, score))
     return DataLoader(data, batch_size, shuffle=shuffle)
 
 
-def score_and_ratio_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_size, shuffle=True):
+def score_and_ratio_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_size, shuffle=True, need_grads=False):
     print("Generating data...")
     data = []
     for _ in tqdm(range(num_priors)):
         ts = (prior(), prior())
         for _ in range(num_sims_per_prior_pair):
+            if need_grads:
+                ts = (ts[0].detach().requires_grad_(), ts[1].detach().requires_grad_())
             k = 0 if random() < 0.5 else 1
             zs = sim.simulate(ts[k])
-            score = sim.eval_score(zs, ts[0], ts[1])
-            ratio = sim.eval_ratio(zs, ts[0], ts[1])
+            score = sim.eval_score(zs, ts[k])[0]
+            ratio = sim.eval_ratio(zs, ts[k], ts[(k + 1) % 2]).detach()
             data.append((k, ts, zs, score, ratio))
     return DataLoader(data, batch_size, shuffle=shuffle)
