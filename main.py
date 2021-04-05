@@ -2,10 +2,12 @@
 from simulators.dummy_simulator import DummySimulator
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
-from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset
+from loss.scandal import scandal, prob
+from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
 from trainer import train
 from models.ratio import Ratio
 from models.classifier import Classifier
+from models.density_mixture import DensityMixture
 from tqdm import tqdm
 import torch
 from functools import partial
@@ -16,11 +18,11 @@ import matplotlib.pyplot as plt
 TRAIN = True
 # training constants
 batch_size = 32
-epochs = 4
+epochs = 5
 train_fraction = 0.9
-num_priors = 60000
+num_priors = 30000
 num_sims_per_prior_pair = 1
-learning_rate = 0.00005
+learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
@@ -29,7 +31,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = Classifier(1, 1, 200)
+model = DensityMixture(1, 1, 20, 200)
 model.to(device)
 
 prior = lambda: torch.rand(1).to(device)
@@ -38,11 +40,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = score_pairs_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
+    train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
     #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(cascal, alpha=1), epochs, optimizer)
+    train(model, train_loader, partial(scandal, alpha=3), epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:
@@ -72,10 +74,12 @@ density_true1 = gaussian_kde(visual_runs1)
 density_true1.covariance_factor = lambda : .1
 density_true1._compute_covariance()
 
-density_pred = [model(torch.tensor([[x]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32), torch.tensor([[theta1]], dtype=torch.float32)) for x in xs]
-density_pred = [(1-x)/x for x in density_pred]
 
-plt.plot(xs, density_true0(xs)/density_true1(xs), "r")
+_, mean, sd, weight = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32))
+#density_pred = [(1-x)/x for x in density_pred]
+density_pred = [prob(x, mean, sd, weight) for x in xs]
+
+plt.plot(xs, density_true0(xs), "r")
 #plt.plot(xs, density_true0(xs), "y")
 #plt.plot(xs, density_true1(xs), "g")
 plt.plot(xs, density_pred, "b")

@@ -1,5 +1,5 @@
 import torch
-from loss.score_loss import score_loss
+from loss.score_loss import paired_score_loss
 
 
 def xe(input, labels):
@@ -10,4 +10,4 @@ def xe(input, labels):
 
 def cascal(input, labels, thetas, target_score, alpha):
     log_ratio = torch.log(1-input) - torch.log(input)
-    return xe(input, labels) + alpha * score_loss(log_ratio, labels, thetas, target_score)
+    return xe(input, labels) + alpha * paired_score_loss(log_ratio, labels, thetas, target_score)
