@@ -1,3 +1,22 @@
+To run sir_fg (Fools-Gold SIR simulator):
+
+> run sir_fg.py (if desirable, edit any simulation parameters in "s = SIR_Sim();")
+> latent data (for now just positions and states at each step of sim) is retrieved as output from .run()
+
+> may need to add velocity/acceleration in latent data if we need to calculate next position
+> ...but if just calculating infection outcome i.e. p(x|z,theta) then current latent data should be good enough?
+
+To run simulator class from another script:
+
+> import sir_fg.py
+> instantiate SIR_Sim() or Visual_SIR_Sim() with desired parameters in the brackets
+> call .run() for latent data
+> Visual_SIR_Sim() requires pygame and a call to .render() to draw the pre-computed simulation
+
+
+
+
+------------------------------------------------------------
 To run 3Blue1Brown SIR model as it is currently implemented:
 
 > install manimlib (e.g. via pip install)
