@@ -1,6 +1,6 @@
 import torch
 
-def rolr(input, target, labels):
+def rolr(input, labels, target):
     v0 = torch.pow(target - input, 2)
     v1 = torch.pow(target - (1/input), 2)
     v2_0 = labels * v0
