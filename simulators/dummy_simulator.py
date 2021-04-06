@@ -2,11 +2,7 @@ import torch
 from .simulator import RatioSimulator, ProbSimulator
 from contextlib import nullcontext
 import math
-
-PI = torch.tensor(math.pi)
-
-def gaussian(x, mean, sd):
-    return 1/(torch.abs(sd)*torch.sqrt(2*PI)) * torch.exp(-0.5*(x-mean)*(x-mean)/(sd*sd))
+from loss.scandal import gaussian
 
 
 class DummySimulator(ProbSimulator):
@@ -31,5 +27,5 @@ class DummySimulator(ProbSimulator):
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         p0 = gaussian(zs[0], θ, torch.tensor(1))
-        p1 = gaussian(zs[1], 0, zs[0])
-        return torch.tensor([p0, p1])
+        p1 = gaussian(zs[1], 0, zs[[0]])
+        return torch.cat([p0, p1])

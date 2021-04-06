@@ -79,5 +79,4 @@ class ProbSimulator(RatioSimulator):
         """
         p = torch.prod(self.p(zs, θ, True))
         log_p = torch.log(p)
-        log_p.backward()
-        return θ.grad.detach(), p
+        return torch.autograd.grad(log_p, θ)[0].detach(), p
