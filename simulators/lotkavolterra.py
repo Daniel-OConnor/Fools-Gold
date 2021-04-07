@@ -1,5 +1,6 @@
 import torch
-from simulator import ProbSimulator
+# from simulator import ProbSimulator
+from .simulator import ProbSimulator
 from tqdm import tqdm
 
 # TODO:
@@ -105,12 +106,13 @@ def pilot_run(path: str):
     stds = stats.std(dim=0)
     torch.save((means, stds), path)
 
-def generate_prior(t):
+def generate_prior(t, width=1):
     """Return a set of priors that are uniformly distributed in log-space
     Arguments:
-        t:    torch.Tensor of size (n, 4), sampled from a uniform distribution
+        t:    torch.Tensor of size (n, 4), sampled from a uniform distribution [0, 1)
     """
-    return torch.exp(t)
+    modifier = width * (t - 0.5)
+    return torch.exp(modifier) * default_params
 
 class LotkaVolterra(ProbSimulator):
     def __init__(self, init_predators=50, init_prey=100, num_time_units=30, step_size=0.2, normalisation_func=(lambda x: x)):
@@ -167,7 +169,6 @@ class LotkaVolterra(ProbSimulator):
             if total_rate < epsilon:
                 # populations have died out, prevent infinite looping
                 pops[num_iterations] = torch.Tensor([self.num_time_units, 0., 0.])
-                print("Extinct!")
                 break
             # sampling exponential distribution with rate (parameter) = total_rate
             delta_t = -(torch.log(1 - torch.rand(1))/total_rate)
@@ -186,7 +187,7 @@ class LotkaVolterra(ProbSimulator):
         for i in range(1, self.num_steps):
             j = 1
             sample_time = self.step_size * i
-            while (j < num_data) and (pops[j, 0] =< sample_time):
+            while (j < num_data) and (pops[j, 0] <= sample_time):
                 j += 1
             # pops[j, 1:] is the pop at the earliest time >= sample_time
             zs[i] = pops[j - 1, 1:]
@@ -213,6 +214,10 @@ class LotkaVolterra(ProbSimulator):
             # calculate probability of event
             delta_pop = torch.round(curr_state[1:] - prev_state[1:])
             reaction = (int(delta_pop[0]), int(delta_pop[1]))
+            if reaction == (0, 0):
+                # this is the extinction reaction
+                ps[i] = 1
+                continue
             reaction_idx = reaction_lookup[reaction]
             rates = θ * torch.Tensor([prev_state[1] * prev_state[2],
                                       prev_state[1],
