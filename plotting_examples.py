@@ -40,7 +40,6 @@ def plot_true_likelihood(sim, theta, start, end, steps):
 def plot_density_network(model, theta, start, end, steps):
     xs = np.linspace(start, end, steps)
     _, mean, sd, weight = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta]], dtype=torch.float32))
-    # density_pred = [(1-x)/x for x in density_pred]
     density_pred = [prob(x, mean, sd, weight) for x in xs]
     plt.plot(xs, density_pred, "b")
     plt.show()
