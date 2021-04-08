@@ -25,9 +25,9 @@ def plot_true_ratio(sim, theta0, theta1, start, end, steps, n):
 
 
 # This is similar to plot_true_ratio, except it plots the probability density for a single prior theta
-def plot_true_likelihood(sim, theta, start, end, steps):
+def plot_true_likelihood(sim, theta, start, end, steps, n):
     # generate data for a pair of thetas
-    visual_runs = np.array([sim.simulate(theta)[1].cpu().detach().numpy() for _ in tqdm(range(40000))])
+    visual_runs = np.array([sim.simulate(theta)[1].cpu().detach().numpy() for _ in tqdm(range(n))])
     xs = np.linspace(start, end, steps)
     density_true = gaussian_kde(visual_runs)
     density_true.covariance_factor = lambda: .05
