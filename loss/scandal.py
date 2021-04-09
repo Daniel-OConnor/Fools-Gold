@@ -6,7 +6,7 @@ from loss.score_loss import score_loss
 PI = torch.tensor(math.pi)
 
 
-def gaussian(x, mean, sd):
+def gaussian(x, mean, sd): # <-- breaks here
     return 1/(torch.abs(sd)*torch.sqrt(2*PI)) * torch.exp(-0.5*(x-mean)*(x-mean)/(sd*sd))
 
 

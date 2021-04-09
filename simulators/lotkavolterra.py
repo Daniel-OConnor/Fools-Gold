@@ -116,6 +116,8 @@ def generate_prior(t, width=1):
     return torch.exp(modifier) * default_params
 
 class LotkaVolterra(ProbSimulator):
+    x_size = 9
+    theta_size = 4
     def __init__(self, init_predators=50, init_prey=100, num_time_units=30, step_size=0.2, normalisation_func=(lambda x: x)):
         self.init_predators = init_predators
         self.init_prey = init_prey
@@ -195,7 +197,7 @@ class LotkaVolterra(ProbSimulator):
         zs[-1] = pops[-1, 1:] # to get the final population values
         return zs
 
-    def p(self, zs, θ):
+    def log_p(self, zs, θ):
         """
         Calculate conditional probabilities for a run of the simulator
         
@@ -203,7 +205,8 @@ class LotkaVolterra(ProbSimulator):
             zs:        List[torch.Tensor], latent variables
             θ:         torch.Tensor, parameters
         Returns:
-            ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
+            log_p:     torch.Tensor (0 dim), equal to log(ps.prod()),
+                   where ps[i] = p(z_i | θ, zs[:i])
         """
         ps = torch.zeros(len(zs))
         ps[0] = 0 # 1 # initial state

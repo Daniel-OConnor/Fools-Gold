@@ -10,7 +10,18 @@ class Simulator:
         returns List[torch.Tensor] zs, where zs[i] is the i-th latent, and
         zs[i] is not dependent on any latent variables zs[j] for j >= i
         """
-        pass
+        raise NotImplementedError()
+    
+    @property
+    @abstractmethod
+    def x_size(self):
+        raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def θ_size(self):
+        raise NotImplementedError()
+
 
 class RatioSimulator(Simulator):
     @abstractmethod
@@ -26,7 +37,7 @@ class RatioSimulator(Simulator):
             log_r:     torch.Tensor (0 dim), equal to log(rs.prod()),
                    where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
         """
-        pass
+        raise NotImplementedError()
 
     def eval_ratio(self, zs, θ_0, θ_1):
         """returns r(x, zs | θ_0, θ_1)"""
@@ -56,7 +67,7 @@ class ProbSimulator(RatioSimulator):
             log_p:     torch.Tensor (0 dim), equal to log(ps.prod()),
                    where ps[i] = p(z_i | θ, zs[:i])
         """
-        pass
+        raise NotImplementedError()
 
     def log_ratio(self, zs, θ_0, θ_1):
         return (self.log_p(zs, θ_0) - self.log_p(zs, θ_1)).sum()

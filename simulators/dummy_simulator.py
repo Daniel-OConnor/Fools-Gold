@@ -1,10 +1,8 @@
 import torch
 from .simulator import RatioSimulator, ProbSimulator
-from contextlib import nullcontext
-import math
 from loss.scandal import gaussian
 
-
+# incorrect interface!!!
 class DummySimulator(ProbSimulator):
     x_size = 1
     theta_size = 1
