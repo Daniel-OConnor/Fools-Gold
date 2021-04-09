@@ -7,7 +7,8 @@ class Simulator:
     def simulate(self, θ):
         """
         Perform a single run of the simulator
-        returns a torch.Tensor zs, where zs[i] is the i-th latent
+        returns List[torch.Tensor] zs, where zs[i] is the i-th latent, and
+        zs[i] is not dependent on any latent variables zs[j] for j >= i
         """
         pass
 
