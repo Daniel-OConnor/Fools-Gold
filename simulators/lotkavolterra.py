@@ -235,6 +235,6 @@ class LotkaVolterra(ProbSimulator):
             # calculate probability of time
             delta_t = curr_state[0] - prev_state[0]
             #prob_time = total_rate * torch.exp(-delta_t * total_rate)
-            ps[i] = prob_event.log() + total_rate.log() - (delta_t * total_rate)
+            ps[i] = prob_event.log()# + total_rate.log() - (delta_t * total_rate)
         #log_ps = torch.log(ps)
         return ps.sum()

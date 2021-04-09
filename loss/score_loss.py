@@ -8,9 +8,11 @@ def paired_score_loss(input, labels, thetas, target_score):
     theta0.retain_grad()
     theta1.retain_grad()
     input.sum().backward(retain_graph=True)
-    v0 = (1 - labels) * torch.pow(theta0.grad - target_score, 2).sum()
-    v1 = labels * torch.pow(theta1.grad - target_score, 2).sum()
-    return torch.mean(v0+v1)
+    theta0_grad = theta0.grad
+    theta1_grad = theta1.grad
+    v0 = (1 - labels) * torch.pow(theta0_grad - target_score, 2).sum()
+    v1 = labels * torch.pow(theta1_grad - target_score, 2).sum()
+    return torch.mean(v0 + v1)
 
 
 def score_loss(input, thetas, target_score):

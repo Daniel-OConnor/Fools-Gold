@@ -1,15 +1,15 @@
 # %% SETUP
-from simulators.dummy_simulator import DummySimulator
+# from simulators.dummy_simulator import DummySimulator
 from simulators import lotkavolterra
 from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
 from loss.rolr import rolr, rascal
-from loss.cascal import cascal
-from loss.scandal import scandal, prob
+# from loss.cascal import cascal
+# from loss.scandal import scandal, prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
 from trainer import train
 from models.ratio import Ratio
-from models.classifier import Classifier
-from models.density_mixture import DensityMixture
+# from models.classifier import Classifier
+# from models.density_mixture import DensityMixture
 from tqdm import tqdm
 import torch
 from functools import partial
@@ -66,8 +66,8 @@ else:
 theta0 = 0.2
 theta1 = 0.8
 # generate data for a single pair of thetas
-visual_runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(10000))])
-visual_runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(10000))])
+visual_runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(100))])
+visual_runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(100))])
 
 xs = np.linspace(-5, 5, 500)
 density_true0 = gaussian_kde(visual_runs0)
