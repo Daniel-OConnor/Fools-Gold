@@ -15,7 +15,7 @@ import numpy as np
 from scipy.stats import gaussian_kde
 import matplotlib.pyplot as plt
 
-TRAIN = False
+TRAIN = True
 # training constants
 batch_size = 32
 epochs = 5
