@@ -4,6 +4,7 @@ from .simulator import ProbSimulator
 from tqdm import tqdm
 
 # TODO:
+# * fix differentiability of probability calculation
 # * perform pilot run to get normalisation stats
 
 default_params = torch.Tensor([0.01, 0.5, 1, 0.01])
@@ -205,8 +206,8 @@ class LotkaVolterra(ProbSimulator):
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         ps = torch.zeros(len(zs))
-        ps[0] = 1 # initial state
-        ps[-1] = 1 # probability of summary statistics given previous latents is 1
+        ps[0] = 0 # 1 # initial state
+        ps[-1] = 0 # 1 # probability of summary statistics given previous latents is 1
         reaction_lookup = {(0, -1): 3, (1, 0): 0, (-1, 0): 1, (0, 1): 2}
         for i in range(1, len(zs) - 1):
             curr_state = zs[i]
@@ -217,7 +218,7 @@ class LotkaVolterra(ProbSimulator):
             if reaction == (0, 0):
                 # this is the extinction reaction
                 ps[i] = 1
-                continue
+                break
             reaction_idx = reaction_lookup[reaction]
             rates = θ * torch.Tensor([prev_state[1] * prev_state[2],
                                       prev_state[1],
@@ -228,6 +229,7 @@ class LotkaVolterra(ProbSimulator):
             prob_event = rates[reaction_idx] / total_rate
             # calculate probability of time
             delta_t = curr_state[0] - prev_state[0]
-            prob_time = total_rate * torch.exp(-delta_t * total_rate)
-            ps[i] = prob_event * prob_time
-        return ps
+            #prob_time = total_rate * torch.exp(-delta_t * total_rate)
+            ps[i] = prob_event.log() + total_rate.log() - (delta_t * total_rate)
+        #log_ps = torch.log(ps)
+        return ps.sum()

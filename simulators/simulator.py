@@ -12,19 +12,9 @@ class Simulator:
         """
         pass
 
-    @property
-    @abstractmethod
-    def x_size(self):
-        pass
-
-    @property
-    @abstractmethod
-    def θ_size(self):
-        pass
-
 class RatioSimulator(Simulator):
     @abstractmethod
-    def ratio(self, zs, θ_0, θ_1):
+    def log_ratio(self, zs, θ_0, θ_1):
         """
         Calculate conditional probability ratios for a run of the simulator
         
@@ -33,13 +23,14 @@ class RatioSimulator(Simulator):
             θ_0:       torch.Tensor, parameters
             θ_1:       torch.Tensor, parameters
         Returns:
-            rs: torch.Tensor, where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
+            log_r:     torch.Tensor (0 dim), equal to log(rs.prod()),
+                   where rs[i] = p(z_i | θ_0, zs[:i]) / p(z_i | θ_1, zs[:i])
         """
         pass
 
     def eval_ratio(self, zs, θ_0, θ_1):
         """returns r(x, zs | θ_0, θ_1)"""
-        return torch.prod(self.ratio(zs, θ_0, θ_1))
+        return self.log_ratio(zs, θ_0, θ_1).exp()
 
     def eval_score(self, zs, θ_0, θ_1):
         """
@@ -48,15 +39,13 @@ class RatioSimulator(Simulator):
             * score, t(x, zs | θ_0, θ_1)
             * ratio, r(x, zs | θ_0, θ_1)
         """
-
-        ratio = torch.prod(self.__ratio(zs, θ_0, θ_1, True))
-        log_ratio = torch.log(ratio)
-        log_ratio.backward()
-        return θ_0.grad.detach(), ratio
+        log_ratio = self.log_ratio(zs, θ_0, θ_1)
+        g = torch.autograd.grad(log_p, θ_0)[0].detach()
+        return g
 
 class ProbSimulator(RatioSimulator):
     @abstractmethod
-    def p(self, zs, θ):
+    def log_p(self, zs, θ):
         """
         Calculate conditional probabilities for a run of the simulator
         
@@ -64,12 +53,13 @@ class ProbSimulator(RatioSimulator):
             zs:        torch.Tensor, latent variables
             θ:         torch.Tensor, parameters
         Returns:
-            ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
+            log_p:     torch.Tensor (0 dim), equal to log(ps.prod()),
+                   where ps[i] = p(z_i | θ, zs[:i])
         """
         pass
 
-    def ratio(self, zs, θ_0, θ_1):
-        return self.p(zs, θ_0) / self.p(zs, θ_1)
+    def log_ratio(self, zs, θ_0, θ_1):
+        return (self.log_p(zs, θ_0) - self.log_p(zs, θ_1)).sum()
 
     def eval_score(self, zs, θ):
         """
@@ -78,6 +68,6 @@ class ProbSimulator(RatioSimulator):
             * score, t(x, zs | θ)
             * joint, p(x, zs | θ)
         """
-        p = torch.prod(self.p(zs, θ, True))
-        log_p = torch.log(p)
-        return torch.autograd.grad(log_p, θ)[0].detach(), p
+        log_p = self.log_p(zs, θ)
+        g = torch.autograd.grad(log_p, θ)[0].detach()
+        return g
