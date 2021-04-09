@@ -35,7 +35,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = DensityMixture(sim.x_size, sim.theta_size, 20, 200)
+model = Ratio(sim.x_size, sim.theta_size, 200)
 model.to(device)
 
 
@@ -43,11 +43,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
+    train_loader = score_and_ratio_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
     #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(scandal, alpha=3), epochs, optimizer)
+    train(model, train_loader, partial(rascal, alpha=3), epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:

@@ -50,6 +50,7 @@ class RatioSimulator(Simulator):
             * score, t(x, zs | θ_0, θ_1)
             * ratio, r(x, zs | θ_0, θ_1)
         """
+        θ_0.retain_grad()
         log_ratio = self.log_ratio(zs, θ_0, θ_1)
         g = torch.autograd.grad(log_p, θ_0)[0].detach()
         return g
@@ -79,6 +80,7 @@ class ProbSimulator(RatioSimulator):
             * score, t(x, zs | θ)
             * joint, p(x, zs | θ)
         """
+        θ.retain_grad()
         log_p = self.log_p(zs, θ)
         g = torch.autograd.grad(log_p, θ)[0].detach()
         return g

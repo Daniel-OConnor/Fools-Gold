@@ -113,7 +113,9 @@ def generate_prior(t, width=1):
         t:    torch.Tensor of size (n, 4), sampled from a uniform distribution [0, 1)
     """
     modifier = width * (t - 0.5)
-    return torch.exp(modifier) * default_params
+    prior = torch.exp(modifier) * default_params
+    prior.requires_grad = True
+    return prior
 
 class LotkaVolterra(ProbSimulator):
     x_size = 9
