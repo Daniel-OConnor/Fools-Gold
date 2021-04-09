@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-
 def train(model, dataset, loss_function, epochs, optimizer):
     for i in range(epochs):
         print("Epoch {}...".format(i))
@@ -10,8 +9,7 @@ def train(model, dataset, loss_function, epochs, optimizer):
         model.train()
         epoch_loss, num_samples = 0.0, 0
         for batch in train_iter:
-            labels, thetas, runs, *targets = batch
-            xs = runs[:, [-1]]
+            labels, thetas, xs, *targets = batch
             batch_sz = xs.shape[0]
             y_hat = model(xs, *thetas)
             loss = loss_function(y_hat, labels, thetas, *targets) * batch_sz
