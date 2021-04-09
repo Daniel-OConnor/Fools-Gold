@@ -12,8 +12,8 @@ def gaussian(x, mean, sd):
 
 
 def gaussian_mixture_prob(x, mean, sd, weight):
-    dist = MultivariateNormal(mean, sd)
-    log_prob = torch.logsumexp(dist.log_prob(torch.unsqueeze(x, -1))+torch.log(weight), dim=(1,))
+    dist = MultivariateNormal(mean, scale_tril=sd)
+    log_prob = torch.logsumexp(dist.log_prob(torch.unsqueeze(x, 1))+torch.log(weight), dim=(1,))
     return log_prob
 
 
