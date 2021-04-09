@@ -62,7 +62,7 @@ else:
 # density_pred.covariance_factor = lambda : .01
 # density_pred._compute_covariance()
 
-
+"""
 theta0 = 0.2
 theta1 = 0.8
 # generate data for a single pair of thetas
@@ -88,5 +88,5 @@ plt.plot(xs, density_true0(xs), "r")
 #plt.plot(xs, density_true1(xs), "g")
 plt.plot(xs, density_pred, "b")
 plt.show()
-
+"""
 print("Done")
