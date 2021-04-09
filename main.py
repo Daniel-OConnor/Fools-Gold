@@ -4,7 +4,7 @@ from simulators import lotkavolterra
 from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
-from loss.scandal import scandal, prob
+from loss.scandal import scandal, gaussian_mixture_prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
 from trainer import train
 from models.ratio import Ratio
@@ -80,7 +80,8 @@ density_true1._compute_covariance()
 
 _, mean, sd, weight = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32))
 #density_pred = [(1-x)/x for x in density_pred]
-density_pred = [prob(x, mean, sd, weight) for x in xs]
+with torch.no_grad():
+    density_pred = [torch.exp(gaussian_mixture_prob(torch.tensor(x, dtype=torch.float32), mean, sd, weight)) for x in xs]
 
 plt.plot(xs, density_true0(xs), "r")
 #plt.plot(xs, density_true0(xs), "y")
