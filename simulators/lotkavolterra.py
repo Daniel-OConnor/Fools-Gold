@@ -187,8 +187,8 @@ class LotkaVolterra(ProbSimulator):
         num_data = pops.shape[0]
         zs = torch.zeros((self.num_steps, 2))
         zs[0] = pops[0, 1:]
+        j = 1
         for i in range(1, self.num_steps):
-            j = 1
             sample_time = self.step_size * i
             while (j < num_data) and (pops[j, 0] <= sample_time):
                 j += 1
