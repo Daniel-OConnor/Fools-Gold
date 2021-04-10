@@ -189,7 +189,7 @@ class SIR_Sim(ProbSimulator):
     
     def p_latent_step(self,zi,zprev,θ):
         # zprev is the previous step's latent variables i.e. z_i-1
-        p_zi_cond = 1 # initialise p(z_i|θ, z_i-1)
+        log_p_zi_cond = 0 # initialise p(z_i|θ, z_i-1)
         
         # === LATENT POSITION/VELOCITY FACTORS ===
         # p(pos | prev pos, prev vel) = 1, so ignore
@@ -201,7 +201,7 @@ class SIR_Sim(ProbSimulator):
             for (v,u) in [(velX, velX_prev), (velY,velY_prev)]:
                 
                 if (abs(v) < self.people[0].max_speed): # fixed at 0.25 for all people
-                    p_zi_cond *= uni_dist.log_prob(abs(abs(v)-abs(u))) # abs(v)-abs(u) is the force that must've been applied
+                    log_p_zi_cond += uni_dist.log_prob(abs(abs(v)-abs(u))) # abs(v)-abs(u) is the force that must've been applied
                     # i.e. multiply by pdf evalutated at uniform-sampled value from this step
                 
                 else: # then v == 0.25 or -0.25, SPECIAL CASE
@@ -210,7 +210,7 @@ class SIR_Sim(ProbSimulator):
                     min_force = abs(abs(v)-abs(u)) # minimum force that was applied to get v==(-)0.25
                     p_v_given_u = ((self.speed - min_force)/self.speed)
                     # update with nat.log of uniform probability that such a force was sampled
-                    p_zi_cond *= torch.log(torch.tensor([p_v_given_u]))
+                    log_p_zi_cond += torch.log(torch.tensor([p_v_given_u]))
         
         # === LATENT INFECTION STATE FACTORS ===
         # p(state | previous latents) is deterministic in all cases except:
@@ -230,11 +230,11 @@ class SIR_Sim(ProbSimulator):
                 # evaluate p(gets infected | some nearby infected people)
                 p_inf = self.p_infected(num_infected_in_range, θ[0])
                 if (states_curr[j]==1): # if person j DID get infected...
-                    p_zi_cond *= torch.log(torch.tensor([p_inf]));
+                    log_p_zi_cond += torch.log(torch.tensor([p_inf]));
                 else: # if person j DIDN'T get infected...
-                    p_zi_cond *= torch.log(torch.tensor([1-p_inf]));
+                    log_p_zi_cond += torch.log(torch.tensor([1-p_inf]));
 
-        return p_zi_cond
+        return log_p_zi_cond
     
     # internal function - evalutates p(gets infected | some nearby infected people)
     def p_infected(self, n:int, p:float):
