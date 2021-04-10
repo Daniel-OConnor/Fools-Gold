@@ -16,6 +16,7 @@ class GaltonBoard(ProbSimulator):
     def __init__(self, row_count, nail_count):
         self.row_count = row_count
         self.nail_count = nail_count
+        self.bins = nail_count - 1 if row_count % 2 == 0 else nail_count-2
 
     # https://github.com/johannbrehmer/goldmine/blob/master/goldmine/simulators/galton.py
     def nail_direction_chance(self, theta, row, nail):
@@ -27,7 +28,7 @@ class GaltonBoard(ProbSimulator):
         return nail_coefficient
 
     def simulate(self, θ):
-        nail = self.nail_count / 2
+        nail = self.nail_count // 2
         zs = []
         for row in range(self.row_count):
             nail_coefficient = self.nail_direction_chance(θ, row, nail)
@@ -41,7 +42,7 @@ class GaltonBoard(ProbSimulator):
                 if row % 2 == 0:
                     nail -= 0
         # Normalize output
-        zs.append(zs[-1]/self.nail_count)
+        zs.append(zs[-1])
         return zs
 
     def log_p(self, zs, θ):

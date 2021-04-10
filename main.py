@@ -2,14 +2,16 @@
 from simulators.dummy_simulator import DummySimulator
 from simulators import lotkavolterra
 from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
+from simulators.galton_board import GaltonBoard
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
-from loss.scandal import scandal, gaussian_mixture_prob
+from loss.scandal import scandal, gaussian_mixture_prob, categorical_prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
 from trainer import train
 from models.ratio import Ratio
 from models.classifier import Classifier
 from models.density_mixture import DensityMixture
+from models.categorical_distribution import CategoricalDistribution
 from tqdm import tqdm
 import torch
 from functools import partial
@@ -22,20 +24,20 @@ TRAIN = True
 batch_size = 2 #32
 epochs = 5
 train_fraction = 1
-num_priors = 4 #30000
+num_priors = 4000 #30000
 num_sims_per_prior_pair = 1
 learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
-prior = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.25).to(device)
-sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) #DummySimulator()
+prior = lambda: ((torch.rand(1).to(device))*0.25)
+sim = GaltonBoard(10, 10)
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = DensityMixture(sim.x_size, sim.theta_size, 20, 200)
+model = CategoricalDistribution(self.bins, sim.theta_size, 100)
 model.to(device)
 
 
@@ -47,7 +49,7 @@ if TRAIN:
     #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(scandal, alpha=3), epochs, optimizer)
+    train(model, train_loader, partial(scandal, alpha=3, prob_func=categorical_prob), epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:
