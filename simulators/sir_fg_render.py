@@ -29,8 +29,8 @@ class Visual_SIR_Sim(SIR_Sim):
                 latent_step = self.latents[s]
                 print(s)
                 for i in range(self.pop):
-                    p_state = int(latent_step[3*i+2])
-                    p_pos = (latent_step[3*i], latent_step[3*i+1])
+                    p_state = int(latent_step[5*i+4])
+                    p_pos = (latent_step[5*i], latent_step[5*i+1])
                     screen_pos = self.posToScreen(p_pos,display_size)
                     pygame.draw.circle(screen, COLOURS[p_state], screen_pos, c)
                     pygame.draw.circle(screen, (0,0,0), screen_pos, c, 2)
@@ -49,7 +49,7 @@ class Visual_SIR_Sim(SIR_Sim):
         return (int(pos[0]*DS/self.city_size), int(pos[1]*DS/self.city_size))
 
 s = Visual_SIR_Sim(pop=75, city_size=10);
-latentData = s.run();
+latentData = s.simulate([0.3,2,14]);
 s.render(750)
 print(latentData)
 
