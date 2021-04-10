@@ -19,14 +19,19 @@ num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")
 
 def foo(i):
-    θ = prior().detach().requires_grad_()
+    θ_0 = prior().detach().requires_grad_()
+    θ_1 = default_params # prior().detach().requires_grad_()
     with torch.no_grad():
-        zs = sim.simulate(θ)
-        logp_0 = sim.log_p(zs, θ).detach()
-        logp_1 = sim.eval_ratio(zs, default_params).detach()
-    score0 = sim.eval_score(zs, θ).detach()
-    score1 = sim.eval_score(zs, default_params).detach()
-    return (0, (θ, default_params), zs[-1], (score0, score1), (logp_0, logp_1))
+        label = 0 if torch.random(1) < 0.5 else 1
+        if label = 1:
+            zs = sim.simulate(θ_1)
+        else:
+            zs = sim.simulate(θ_0)
+        logp_0 = sim.log_p(zs, θ_0).detach()
+        logp_1 = sim.eval_ratio(zs, θ_1).detach()
+    score0 = sim.eval_score(zs, θ_0).detach()
+    score1 = sim.eval_score(zs, θ_1).detach()
+    return (label, (θ_0, θ_1), zs[-1], (score0, score1), (logp_0, logp_1))
 
 for i in tqdm(range(num_iterations)):
     print("Iteration {} of {}...".format(i+1, num_iterations))
