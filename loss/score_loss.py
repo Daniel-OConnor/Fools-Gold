@@ -1,6 +1,5 @@
 import torch
 
-
 # Takes the derivative with respect to theta.
 # Used in multiple loss functions
 def paired_score_loss(input, labels, thetas, target_score):
@@ -14,10 +13,9 @@ def paired_score_loss(input, labels, thetas, target_score):
     v1 = labels * torch.pow(theta1_grad - target_score, 2).sum()
     return torch.mean(v0 + v1)
 
-
 def score_loss(input, thetas, target_score):
     thetas[0].grad = None
     thetas[0].retain_grad()
-    torch.sum(input).backward(retain_graph=True)
+    torch.sum(input).backward()
     v = torch.pow(thetas[0].grad - target_score, 2)
     return torch.mean(v)

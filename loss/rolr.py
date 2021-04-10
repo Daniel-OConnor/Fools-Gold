@@ -12,4 +12,6 @@ def rolr(input, labels, _, target):
 
 def rascal(input, labels, thetas, target_score, target_ratio, alpha):
     log_ratio = torch.log(input)
-    return rolr(input, labels, thetas, target_ratio) + alpha * paired_score_loss(log_ratio, labels, thetas, target_score)
+    rolr_loss = rolr(input, labels, thetas, target_ratio)
+    score_loss = paired_score_loss(log_ratio, labels, thetas, target_score)
+    return rolr_loss + alpha * score_loss

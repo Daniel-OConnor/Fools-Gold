@@ -4,10 +4,18 @@ from .simulator import ProbSimulator
 from tqdm import tqdm
 
 # TODO:
-# * fix differentiability of probability calculation
 # * perform pilot run to get normalisation stats
 
+torch_Tensor = torch.cuda.Tensor if torch.cuda.is_available() else torch.Tensor
+
 default_params = torch.Tensor([0.01, 0.5, 1, 0.01])
+
+brehmer_means = torch.Tensor([1.04272841e+02, 7.92735828e+01, 8.56355494e+00, 8.11906932e+00,
+            9.75067266e-01, 9.23352650e-01, 9.71107191e-01, 9.11167340e-01,
+            4.36308022e-02])
+brehmer_stds = torch.Tensor([2.68008281e+01, 2.14120703e+02, 9.00247450e-01, 1.04245882e+00,
+        1.13785497e-02, 2.63556410e-02, 1.36672075e-02, 2.76435894e-02,
+        1.38785995e-01])
 
 def sample_discrete(distribution: torch.Tensor) -> int:
     """Sample a discrete distribution
@@ -69,15 +77,9 @@ def normalisation_func_brehmer(summary: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor of shape (9), the normalised summary statistics
     """
-    means = torch.Tensor([1.04272841e+02, 7.92735828e+01, 8.56355494e+00, 8.11906932e+00,
-             9.75067266e-01, 9.23352650e-01, 9.71107191e-01, 9.11167340e-01,
-             4.36308022e-02])
-    stds = torch.Tensor([2.68008281e+01, 2.14120703e+02, 9.00247450e-01, 1.04245882e+00,
-            1.13785497e-02, 2.63556410e-02, 1.36672075e-02, 2.76435894e-02,
-            1.38785995e-01])
-    return (summary - means) / stds
+    return (summary - brehmer_means) / brehmer_stds
 
-def normalisation_func_FDJ(summary: torch.Tensor) -> torch.Tensor:
+def normalisation_func_FG(summary: torch.Tensor) -> torch.Tensor:
     """normalisation func based on the means and stds from a pilot run of 1000 simulations,
     as described in arXiv:1605.06376 appendix F
     
@@ -88,12 +90,6 @@ def normalisation_func_FDJ(summary: torch.Tensor) -> torch.Tensor:
         torch.Tensor of shape (9), the normalised summary statistics
     """
     raise NotImplementedError()
-    means = torch.Tensor([1.04272841e+02, 7.92735828e+01, 8.56355494e+00, 8.11906932e+00,
-             9.75067266e-01, 9.23352650e-01, 9.71107191e-01, 9.11167340e-01,
-             4.36308022e-02])
-    stds = torch.Tensor([2.68008281e+01, 2.14120703e+02, 9.00247450e-01, 1.04245882e+00,
-            1.13785497e-02, 2.63556410e-02, 1.36672075e-02, 2.76435894e-02,
-            1.38785995e-01])
     return (summary - means) / stds
 
 def pilot_run(path: str):
@@ -131,7 +127,7 @@ class LotkaVolterra(ProbSimulator):
     def simulate(self, θ, epsilon=1e-9):
         """
         Perform a single run of the simulator
-        returns a torch.Tensor zs, where zs[i] is the i-th latent
+        returns a list of torch.Tensor zs, where zs[i] is the i-th latent
         
         For the general structure of simulators in our implementation, probability calculation
         is decoupled from simulation. As such, the method in arXiv:1605.06376 appendix F
@@ -210,9 +206,8 @@ class LotkaVolterra(ProbSimulator):
             log_p:     torch.Tensor (0 dim), equal to log(ps.prod()),
                    where ps[i] = p(z_i | θ, zs[:i])
         """
-        ps = torch.zeros(len(zs))
+        ps = torch.zeros(len(zs) - 1)
         ps[0] = 0 # 1 # initial state
-        ps[-1] = 0 # 1 # probability of summary statistics given previous latents is 1
         reaction_lookup = {(0, -1): 3, (1, 0): 0, (-1, 0): 1, (0, 1): 2}
         for i in range(1, len(zs) - 1):
             curr_state = zs[i]
@@ -222,7 +217,7 @@ class LotkaVolterra(ProbSimulator):
             reaction = (int(delta_pop[0]), int(delta_pop[1]))
             if reaction == (0, 0):
                 # this is the extinction reaction
-                ps[i] = 1
+                # ps[i] = 0
                 break
             reaction_idx = reaction_lookup[reaction]
             rates = θ * torch.Tensor([prev_state[1] * prev_state[2],
@@ -234,7 +229,6 @@ class LotkaVolterra(ProbSimulator):
             prob_event = rates[reaction_idx] / total_rate
             # calculate probability of time
             delta_t = curr_state[0] - prev_state[0]
-            #prob_time = total_rate * torch.exp(-delta_t * total_rate)
-            ps[i] = prob_event.log()# + total_rate.log() - (delta_t * total_rate)
-        #log_ps = torch.log(ps)
+            prob_time = total_rate * torch.exp(-delta_t * total_rate)
+            ps[i] = prob_event.log() + total_rate.log() - (delta_t * total_rate)
         return ps.sum()
