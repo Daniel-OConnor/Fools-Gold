@@ -1,6 +1,6 @@
 import torch
 import torch.distributions.uniform as torchUni
-from scipy.stats import binom
+import torch.distributions.binomial as torchBin
 import numpy as np
 import random
 from simulator import ProbSimulator
@@ -238,9 +238,14 @@ class SIR_Sim(ProbSimulator):
     
     # internal function - evalutates p(gets infected | some nearby infected people)
     def p_infected(self, n:int, p:float):
-        binom_dist = binom(n, p)
+        binom_dist = torchBin.Binomial(n, torch.tensor([p]))
+        lp0 = binom_dist.log_prob(torch.tensor([0]))
+        # 1/log(p) = log(-p)
+        # then add 1 with logaddexp to get log(1-p)
+        output = torch.logaddexp(torch.tensor([1]),torch.tensor([1/lp0]))
+        
         # returns 1 - p(0 transmissions to susceptible | 'n' nearby infected, 'p' prob. of transmission)
-        return 1-binom_dist.pmf(0)
+        return output
 
 
 
