@@ -93,6 +93,9 @@ class SIR_Sim(ProbSimulator):
             if (TEST): print([list(p.pos) for p in self.people], [p.state for p in self.people])
         print("simulation complete; latent variable values returned")
         self.total_steps = self.step;
+        # add output latent layer
+        # proportion that were infected (and optionally recovered) by end of sim
+        self.latents.append(torch.tensor([(self.num_I+self.num_R)/self.pop]))
         return self.torch_latents(self.latents)
     
     def infect_patient_zero(self):
@@ -174,13 +177,13 @@ class SIR_Sim(ProbSimulator):
         # torch Uniform distribution for initial positions of population
         uni_dist = torchUni.Uniform(0,self.city_size)
 
-        ps[0] = 1
+        ps[0] = 0
         # computes ps[0] as product of pdfs of independent locations of each person
         for i in range(self.pop):
-            ps[0] *= uni_dist.log_prob(zs[0][5*i]) # initial pos x-coord
-            ps[0] *= uni_dist.log_prob(zs[0][5*i+1]) # initial pos y-coord
+            ps[0] += uni_dist.log_prob(zs[0][5*i]) # initial pos x-coord
+            ps[0] += uni_dist.log_prob(zs[0][5*i+1]) # initial pos y-coord
         # then multiply by probability of person[i] being chosen as patient zero
-        ps[0] *= (1.0/float(self.pop))
+        ps[0] += torch.log(1.0/float(self.pop))
 
         for i in range(1, len(zs)):
             ps[i] = p_latent_step(zs[i], zs[i-1])
