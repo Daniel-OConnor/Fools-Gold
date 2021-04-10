@@ -1,6 +1,6 @@
 import torch
 # from simulator import ProbSimulator
-from .simulator import ProbSimulator
+from simulators.simulator import ProbSimulator
 from tqdm import tqdm
 
 # TODO:
@@ -90,7 +90,6 @@ def normalisation_func_FG(summary: torch.Tensor) -> torch.Tensor:
         torch.Tensor of shape (9), the normalised summary statistics
     """
     raise NotImplementedError()
-    return (summary - means) / stds
 
 def pilot_run(path: str):
     # perform a pilot run of 1000 runs and save mean and std of summary statistics to path
@@ -110,7 +109,7 @@ def generate_prior(t, width=1):
     """
     modifier = width * (t - 0.5)
     prior = torch.exp(modifier) * default_params
-    prior.requires_grad = True
+    # prior.requires_grad_()
     return prior
 
 class LotkaVolterra(ProbSimulator):
