@@ -21,7 +21,7 @@ print("Generating data...")
 def foo(i):
     try:
         θ_0 = prior().detach().requires_grad_()
-        θ_1 = default_params.requires_grad_() # prior().detach().requires_grad_()
+        θ_1 = default_params.detach().requires_grad_() # prior().detach().requires_grad_()
         with torch.no_grad():
             label = 0 if torch.rand(1) < 0.5 else 1
             if label == 1:
