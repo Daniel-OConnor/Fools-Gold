@@ -37,7 +37,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = CategoricalDistribution(self.bins, sim.theta_size, 100)
+model = CategoricalDistribution(sim.bins, sim.theta_size, 100)
 model.to(device)
 
 
