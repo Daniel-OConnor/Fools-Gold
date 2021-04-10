@@ -1,5 +1,7 @@
 # %% SETUP
 from simulators.dummy_simulator import DummySimulator
+from simulators import lotkavolterra
+from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
 from loss.scandal import scandal, prob
@@ -17,25 +19,26 @@ import matplotlib.pyplot as plt
 
 TRAIN = True
 # training constants
-batch_size = 32
+batch_size = 2 #32
 epochs = 5
-train_fraction = 0.9
-num_priors = 30000
+train_fraction = 1
+num_priors = 4 #30000
 num_sims_per_prior_pair = 1
 learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
+prior = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.25).to(device)
+sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) #DummySimulator()
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = DensityMixture(1, 1, 20, 200)
+model = DensityMixture(sim.x_size, sim.theta_size, 20, 200)
 model.to(device)
 
-prior = lambda: torch.rand(1).to(device)
-sim = DummySimulator()
+
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
