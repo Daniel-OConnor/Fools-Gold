@@ -1,9 +1,11 @@
 import torch
 import torch.distributions.uniform as torchUni
-import torch.distributions.binomial as torchBin
+from torch.distributions.binomial import Binomial
+from scipy.stats import binom
 import numpy as np
 import random
-from simulator import ProbSimulator
+from .simulator import ProbSimulator
+import math
 
 # susceptible, infected, recovered/removed
 S = 0; I = 1; R = 2
@@ -50,7 +52,7 @@ class SIR_Sim(ProbSimulator):
     # required by Simulator class
     # x_size is size of output (proprtion infected and/or recovered?)
     # θ_size is size of sim. run parameters (infection radius, duration and prob. catching per day)
-    x_size = 1; θ_size = 3;
+    x_size = 1; theta_size = 3;
 
     def __init__(self, pop:int=20, city_size=5, speed=0.1):
         self.pop = pop;
@@ -84,6 +86,11 @@ class SIR_Sim(ProbSimulator):
         self.p_infection_per_day = θ[0]
         self.infection_rad = θ[1]
         self.infection_duration = θ[2]
+        self.latents = []
+        self.num_S = self.pop
+        self.num_I = self.num_R = 0
+        self.people = []
+        self.add_people()
         
         self.infect_patient_zero()
         # initial latent vars update stores initial positions, velocities and patient zero state
@@ -91,12 +98,9 @@ class SIR_Sim(ProbSimulator):
         while (self.step < steps or (steps==0 and self.num_I > 0)):
             self.update()
             if (TEST): print([list(p.pos) for p in self.people], [p.state for p in self.people])
-        print("simulation complete; latent variable values returned")
-        self.total_steps = self.step;
-        # add output latent layer
-        # proportion that were infected (and optionally recovered) by end of sim
+        self.total_steps = self.step
         self.latents.append(torch.tensor([(self.num_I+self.num_R)/self.pop]))
-        return self.torch_latents(self.latents)
+        return self.latents
     
     def infect_patient_zero(self):
         targetID:int = random.randrange(self.pop)
@@ -144,7 +148,7 @@ class SIR_Sim(ProbSimulator):
                 self.recover(i_person)
     
     def update_latents(self):
-        latent_step = np.zeros(self.pop*5)
+        latent_step = torch.zeros(self.pop*5)
         for p in self.people:
             j = p.id
             latent_step[5*j] = p.pos[0]
@@ -160,7 +164,7 @@ class SIR_Sim(ProbSimulator):
             l = torch.from_numpy(l)
         return torch.tensor(latent_data)
 
-    def p(self, zs, θ):
+    def log_p(self, zs, θ):
         """
         Calculate conditional probabilities for a run of the simulator
         
@@ -170,29 +174,28 @@ class SIR_Sim(ProbSimulator):
         Returns:
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
-        ps = torch.zeros(len(zs))
+        ps = [0 for _ in range(len(zs)-1)]
 
         # === PROB. DENSITY CALCULATION FOR ps[0] ===
         
         # torch Uniform distribution for initial positions of population
-        uni_dist = torchUni.Uniform(0,self.city_size)
+        uni_dist = torchUni.Uniform(0, self.city_size)
 
-        ps[0] = 0
+        ps[0] = torch.tensor(1)
         # computes ps[0] as product of pdfs of independent locations of each person
         for i in range(self.pop):
-            ps[0] += uni_dist.log_prob(zs[0][5*i]) # initial pos x-coord
-            ps[0] += uni_dist.log_prob(zs[0][5*i+1]) # initial pos y-coord
+            ps[0] = ps[0] + uni_dist.log_prob(zs[0][5*i])  # initial pos x-coord
+            ps[0] = ps[0] + uni_dist.log_prob(zs[0][5*i+1])  # initial pos y-coord
         # then multiply by probability of person[i] being chosen as patient zero
-        ps[0] += torch.log(1.0/float(self.pop))
+        ps[0] = ps[0] + math.log(1.0/float(self.pop))
+        for i in range(1, len(zs)-1):
+            ps[i] = self.p_latent_step(zs[i], zs[i-1], θ)
 
-        for i in range(1, len(zs)):
-            ps[i] = p_latent_step(zs[i], zs[i-1])
-
-        return ps
+        return sum(ps)
     
     def p_latent_step(self,zi,zprev,θ):
         # zprev is the previous step's latent variables i.e. z_i-1
-        log_p_zi_cond = 0 # initialise p(z_i|θ, z_i-1)
+        log_p_zi_cond = torch.tensor(0.) # initialise p(z_i|θ, z_i-1)
         
         # === LATENT POSITION/VELOCITY FACTORS ===
         # p(pos | prev pos, prev vel) = 1, so ignore
@@ -204,7 +207,7 @@ class SIR_Sim(ProbSimulator):
             for (v,u) in [(velX, velX_prev), (velY,velY_prev)]:
                 
                 if (abs(v) < self.people[0].max_speed): # fixed at 0.25 for all people
-                    log_p_zi_cond += uni_dist.log_prob(abs(abs(v)-abs(u))) # abs(v)-abs(u) is the force that must've been applied
+                    log_p_zi_cond = log_p_zi_cond + uni_dist.log_prob(abs(abs(v)-abs(u))) # abs(v)-abs(u) is the force that must've been applied
                     # i.e. multiply by pdf evalutated at uniform-sampled value from this step
                 
                 else: # then v == 0.25 or -0.25, SPECIAL CASE
@@ -213,46 +216,40 @@ class SIR_Sim(ProbSimulator):
                     min_force = abs(abs(v)-abs(u)) # minimum force that was applied to get v==(-)0.25
                     p_v_given_u = ((self.speed - min_force)/self.speed)
                     # update with nat.log of uniform probability that such a force was sampled
-                    log_p_zi_cond += torch.log(torch.tensor([p_v_given_u]))
+                    log_p_zi_cond = log_p_zi_cond + torch.log(p_v_given_u)
         
         # === LATENT INFECTION STATE FACTORS ===
         # p(state | previous latents) is deterministic in all cases except:
         # ...p(state==I | previous state==S, other latents)
         # ...p(state==S | previous state==S, other latents => infectious person within radius)
-        states_curr = [zi[5*j+4] for j in range(self.people)]
-        states_prev = [zprev[5*j+4] for j in range(self.people)]
-        for j in range(self.people):
-            if (states_prev[j]==0): # if S -> I or S -> S
-                num_infected_in_range = 0;
-                for k in range(self.people):
-                    if (states_prev[k]==1): # if k is index of an infected person
+        states_curr = [zi[5 * j + 4] for j in range(len(self.people))]
+        states_prev = [zprev[5 * j + 4] for j in range(len(self.people))]
+        for j in range(len(self.people)):
+            if (states_prev[j] == 0):  # if S -> I or S -> S
+                num_infected_in_range = 0
+                for k in range(len(self.people)):
+                    if (states_prev[k] == 1):  # if k is index of an infected person
                         # check if within infection radius
-                        dist = np.linalg.norm([zprev[5*j], zprev[5*j+1]] - [zprev[5*k], zprev[5*k+1]])
+                        dist = np.linalg.norm([zprev[5 * j] - zprev[5 * k], zprev[5 * j + 1] - zprev[5 * k + 1]])
                         if (dist <= θ[1]):
-                            num_infected_in_range += 1;
+                            num_infected_in_range += 1
                 # evaluate p(gets infected | some nearby infected people)
                 p_inf = self.p_infected(num_infected_in_range, θ[0])
                 if (states_curr[j]==1): # if person j DID get infected...
-                    log_p_zi_cond += torch.log(torch.tensor([p_inf]));
+                    log_p_zi_cond = log_p_zi_cond + torch.log(p_inf);
                 else: # if person j DIDN'T get infected...
-                    log_p_zi_cond += torch.log(torch.tensor([1-p_inf]));
-
+                    log_p_zi_cond = log_p_zi_cond + torch.log(1-p_inf);
         return log_p_zi_cond
     
     # internal function - evalutates p(gets infected | some nearby infected people)
-    def p_infected(self, n:int, p:float):
-        binom_dist = torchBin.Binomial(n, torch.tensor([p]))
-        lp0 = binom_dist.log_prob(torch.tensor([0]))
-        # 1/log(p) = log(-p)
-        # then add 1 with logaddexp to get log(1-p)
-        output = torch.logaddexp(torch.tensor([1]),torch.tensor([1/lp0]))
-        
+    def p_infected(self, n, p):
+        binom_dist = Binomial(n, p)
         # returns 1 - p(0 transmissions to susceptible | 'n' nearby infected, 'p' prob. of transmission)
-        return output
+        return torch.logaddexp(torch.tensor(1.), 1/binom_dist.log_prob(torch.tensor(0.)))
 
 
 
 
-s = SIR_Sim();
-latentData = s.simulate([0.3,2,14])
-print(latentData)
+#s = SIR_Sim();
+#latentData = s.simulate([0.3,2,14])
+#print(latentData)
