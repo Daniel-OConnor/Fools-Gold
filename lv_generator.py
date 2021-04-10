@@ -23,7 +23,7 @@ def foo(i):
         θ_0 = prior().detach().requires_grad_()
         θ_1 = default_params.requires_grad_() # prior().detach().requires_grad_()
         with torch.no_grad():
-            label = 0 if torch.random(1) < 0.5 else 1
+            label = 0 if torch.rand(1) < 0.5 else 1
             if label == 1:
                 zs = sim.simulate(θ_1)
             else:
@@ -37,11 +37,15 @@ def foo(i):
         return None
 
 save_iter = tqdm(range(num_iterations))
+total_runs = 0
+saved_samples = 0
 for i in save_iter:
     with Pool(num_workers) as p:
         res = list(p.imap(foo, range(num_priors_per_iteration)))
         dataset = [t for t in res if t is not None]
-        save_iter.set_description("Yield: {}".format(len(dataset)/len(res)))
+        total_runs += len(res)
+        saved_samples += len(dataset)
+        save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
 
 # EXAMPLE LOADING CODE
