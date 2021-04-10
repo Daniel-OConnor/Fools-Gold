@@ -173,6 +173,11 @@ class LotkaVolterra(ProbSimulator):
                 # populations have died out, prevent infinite looping
                 pops[num_iterations] = torch.Tensor([self.num_time_units, 0., 0.])
                 break
+            if curr_state[2] > 1000:
+                # predators have died out, this destabilises the ecosystem leading to extinction (necessary to prevent
+                # simulator freezing due to exploding rates)
+                pops[num_iterations] = torch.Tensor([self.num_time_units, 0., 0.])
+                break
             # sampling exponential distribution with rate (parameter) = total_rate
             delta_t = -(torch.log(1 - torch.rand(1))/total_rate)
             time += delta_t
@@ -220,6 +225,10 @@ class LotkaVolterra(ProbSimulator):
             reaction = (int(delta_pop[0]), int(delta_pop[1]))
             if reaction == (0, 0):
                 # this is the extinction reaction
+                ps[i] = 1
+                break
+            if reaction[1] < -1:
+                # this is the prey overload reaction
                 ps[i] = 1
                 break
             reaction_idx = reaction_lookup[reaction]
