@@ -62,7 +62,7 @@ def summary_statistics(zs: torch.Tensor, normalisation_func) -> torch.Tensor:
     # ensure autocorrelations are in the same order as "Mining gold..."
     autocorr = torch.stack([autocorr_xy_1, autocorr_xy_2]).transpose(0, 1).reshape((-1))
     cross_corr = (norm_xy[:, 0] * norm_xy[:, 1]).sum(dim=0).unsqueeze(0) / (n - 1)
-    summary = torch.cat([mean_xy, var_xy,
+    summary = torch.cat([mean_xy, var_xy.log(),
                          autocorr,
                          cross_corr])
     return normalisation_func(summary)
