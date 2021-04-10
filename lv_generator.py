@@ -24,7 +24,7 @@ def foo(i):
         θ_1 = default_params.requires_grad_() # prior().detach().requires_grad_()
         with torch.no_grad():
             label = 0 if torch.random(1) < 0.5 else 1
-            if label = 1:
+            if label == 1:
                 zs = sim.simulate(θ_1)
             else:
                 zs = sim.simulate(θ_0)
