@@ -28,7 +28,7 @@ def foo(i):
                 zs = sim.simulate(θ_1)
             else:
                 zs = sim.simulate(θ_0)
-            assert(zs.isfinite().all())
+            assert(all([z.isfinite().all() for z in zs]))
             logp_0 = sim.log_p(zs, θ_0).detach()
             assert(logp_0.isfinite().all())
             logp_1 = sim.log_p(zs, θ_1).detach()
