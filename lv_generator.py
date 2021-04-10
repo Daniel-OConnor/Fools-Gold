@@ -36,10 +36,12 @@ def foo(i):
     except:
         return None
 
-for i in tqdm(range(num_iterations)):
-    print("Iteration {} of {}...".format(i+1, num_iterations))
+save_iter = tqdm(range(num_iterations))
+for i in save_iter:
     with Pool(num_workers) as p:
-        dataset = [t for t in list(p.imap(foo, range(num_priors_per_iteration))) if t is not None]
+        res = list(p.imap(foo, range(num_priors_per_iteration)))
+        dataset = [t for t in res if t is not None]
+        save_iter.set_description("Yield: {}".format(len(dataset)/len(res))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
 
 # EXAMPLE LOADING CODE
