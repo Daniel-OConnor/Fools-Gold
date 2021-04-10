@@ -19,24 +19,27 @@ num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")
 
 def foo(i):
-    θ_0 = prior().detach().requires_grad_()
-    θ_1 = default_params # prior().detach().requires_grad_()
-    with torch.no_grad():
-        label = 0 if torch.random(1) < 0.5 else 1
-        if label = 1:
-            zs = sim.simulate(θ_1)
-        else:
-            zs = sim.simulate(θ_0)
-        logp_0 = sim.log_p(zs, θ_0).detach()
-        logp_1 = sim.eval_ratio(zs, θ_1).detach()
-    score0 = sim.eval_score(zs, θ_0).detach()
-    score1 = sim.eval_score(zs, θ_1).detach()
-    return (label, (θ_0, θ_1), zs[-1], (score0, score1), (logp_0, logp_1))
+    try:
+        θ_0 = prior().detach().requires_grad_()
+        θ_1 = default_params.requires_grad_() # prior().detach().requires_grad_()
+        with torch.no_grad():
+            label = 0 if torch.random(1) < 0.5 else 1
+            if label = 1:
+                zs = sim.simulate(θ_1)
+            else:
+                zs = sim.simulate(θ_0)
+            logp_0 = sim.log_p(zs, θ_0).detach()
+            logp_1 = sim.log_p(zs, θ_1).detach()
+        score0 = sim.eval_score(zs, θ_0).detach()
+        score1 = sim.eval_score(zs, θ_1).detach()
+        return (label, (θ_0, θ_1), zs[-1], (score0, score1), (logp_0, logp_1))
+    except:
+        return None
 
 for i in tqdm(range(num_iterations)):
     print("Iteration {} of {}...".format(i+1, num_iterations))
     with Pool(num_workers) as p:
-        dataset = list(p.imap(foo, range(num_priors_per_iteration))
+        dataset = [t for t in list(p.imap(foo, range(num_priors_per_iteration))) if t is not None]
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
 
 # EXAMPLE LOADING CODE
