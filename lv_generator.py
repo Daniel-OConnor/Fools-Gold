@@ -28,10 +28,15 @@ def foo(i):
                 zs = sim.simulate(θ_1)
             else:
                 zs = sim.simulate(θ_0)
+            assert(zs.isfinite().all())
             logp_0 = sim.log_p(zs, θ_0).detach()
+            assert(logp_0.isfinite().all())
             logp_1 = sim.log_p(zs, θ_1).detach()
+            assert(logp_1.isfinite().all())
         score0 = sim.eval_score(zs, θ_0).detach()
+        assert(score0.isfinite().all())
         score1 = sim.eval_score(zs, θ_1).detach()
+        assert(score1.isfinite().all())
         return (label, (θ_0, θ_1), zs[-1], (score0, score1), (logp_0, logp_1))
     except:
         return None
@@ -42,11 +47,12 @@ saved_samples = 0
 for i in save_iter:
     with Pool(num_workers) as p:
         res = list(p.imap(foo, range(num_priors_per_iteration)))
-        dataset = [t for t in res if t is not None]
         total_runs += len(res)
+        dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
         save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
+    del res, dataset
 
 # EXAMPLE LOADING CODE
 
