@@ -52,18 +52,19 @@ class SIR_Sim(ProbSimulator):
     # required by Simulator class
     # x_size is size of output (proprtion infected and/or recovered?)
     # θ_size is size of sim. run parameters (infection radius, duration and prob. catching per day)
-    x_size = 1; theta_size = 3;
+    x_size = 1; theta_size = 1;
 
-    def __init__(self, pop:int=20, city_size=5, speed=0.1):
+    def __init__(self, pop:int=20, city_size=5, speed=0.1,
+                infection_rad=2, infection_duration=14):
         self.pop = pop;
         self.city_size = city_size;
         self.speed = speed;
+        self.infection_rad = infection_rad;
+        self.infection_duration = infection_duration;
 
-        # THETA PARAMETERS
+        # THETA PARAMETER
         # p_infection_per_day (=0.3)
-        # infection_rad (=2)
-        # infection_duration (=14)
-        # ... are now given in θ argument to .simulate()
+        # ... is now given in θ argument to .simulate()
 
         self.latents = []
 
@@ -84,8 +85,6 @@ class SIR_Sim(ProbSimulator):
 
     def simulate(self, θ, steps=0):
         self.p_infection_per_day = θ[0]
-        self.infection_rad = θ[1]
-        self.infection_duration = θ[2]
         self.latents = []
         self.num_S = self.pop
         self.num_I = self.num_R = 0
@@ -230,7 +229,7 @@ class SIR_Sim(ProbSimulator):
                     if (states_prev[k] == 1):  # if k is index of an infected person
                         # check if within infection radius
                         dist = np.linalg.norm([zprev[5 * j] - zprev[5 * k], zprev[5 * j + 1] - zprev[5 * k + 1]])
-                        if (dist <= θ[1]):
+                        if (dist <= self.infection_rad):
                             num_infected_in_range += 1
                 if num_infected_in_range > 0:
                     # evaluate p(gets infected | some nearby infected people)
@@ -249,8 +248,3 @@ class SIR_Sim(ProbSimulator):
         p0 = binom_dist.log_prob(torch.tensor(0.))
         out = torch.log(1 - torch.exp(p0))
         return out
-
-
-#s = SIR_Sim();
-#latentData = s.simulate([0.3,2,14])
-#print(latentData)
