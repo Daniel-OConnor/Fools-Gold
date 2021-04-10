@@ -48,7 +48,7 @@ class Visual_SIR_Sim(SIR_Sim):
     def posToScreen(self, pos, DS:int):
         return (int(pos[0]*DS/self.city_size), int(pos[1]*DS/self.city_size))
 
-s = Visual_SIR_Sim(pop=75, city_size=10);
+s = Visual_SIR_Sim(pop=50, city_size=8);
 latentData = s.simulate([0.3,2,14]);
 s.render(750)
 print(latentData)

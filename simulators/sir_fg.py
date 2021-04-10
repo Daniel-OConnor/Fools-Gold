@@ -1,4 +1,6 @@
 import torch
+import torch.distributions.uniform as torchUni
+from scipy.stats import binom
 import numpy as np
 import random
 from simulator import ProbSimulator
@@ -21,22 +23,23 @@ class Person():
         self.speed = speed;
     
     def update_position(self):
+        # update position using previous pos and velocity
+        self.pos = self.pos + self.velocity
+
+        # now calculate new velocity ready for next step
         force = np.zeros(2)
         for i in range(2):
             force[i] = random.uniform(-self.speed,self.speed)
             self.velocity[i] += force[i]
-
-        norm = np.linalg.norm(self.velocity)
-        if (norm > self.max_speed):
-            self.velocity = self.velocity/norm
-            # (normalize to 1 to prevent exceeding max_speed)
+            # prevent exceeding max speed along the axis:
+            if (abs(self.velocity[i]) > self.max_speed):
+                self.velocity[i] = self.max_speed * (1 if self.velocity[i]>=self.max_speed else -1)
 
         for i in range(2): # for x/y-axis
             new_pos_i = self.pos[i]+self.velocity[i] # pre-compute new position
             if (new_pos_i < 0 or new_pos_i > self.city_size): # if would move person beyond city limits
                 self.velocity[i] *= -1 # approximate collision with city boundary
         self.time += 1
-        self.pos = self.pos + self.velocity # can now 'safely' update position
 
     def update_state(self, state:int):
         self.state = state
@@ -112,10 +115,11 @@ class SIR_Sim(ProbSimulator):
             pass; # can't recover bc already recovered or susceptible
 
     def update(self):
+        self.update_states()
+        
         for p in self.people:
             p.update_position()
 
-        self.update_states()
         self.step += 1
         self.update_latents()
     
@@ -164,10 +168,21 @@ class SIR_Sim(ProbSimulator):
             ps: torch.Tensor, where ps[i] = p(z_i|θ, zs[:i])
         """
         ps = torch.zeros(len(zs))
-        ps[0] = ps[-1] = 1
-        # (probability of init. state & final latents given previous latents is 1)
 
-        for i in range(1, len(zs) - 1):
+        # === PROB. DENSITY CALCULATION FOR ps[0] ===
+        
+        # torch Uniform distribution for initial positions of population
+        uni_dist = torchUni.Uniform(0,self.city_size)
+
+        ps[0] = 1
+        # computes ps[0] as product of pdfs of independent locations of each person
+        for i in range(self.pop):
+            ps[0] *= uni_dist.log_prob(zs[0][5*i]) # initial pos x-coord
+            ps[0] *= uni_dist.log_prob(zs[0][5*i+1]) # initial pos y-coord
+        # then multiply by probability of person[i] being chosen as patient zero
+        ps[0] *= (1.0/float(self.pop))
+
+        for i in range(1, len(zs)):
             ps[i] = p_latent_step(zs[i], zs[i-1])
 
         return ps
@@ -176,12 +191,56 @@ class SIR_Sim(ProbSimulator):
         # zprev is the previous step's latent variables i.e. z_i-1
         p_zi_cond = 1 # initialise p(z_i|θ, z_i-1)
         
-        # probability calculation goes here
+        # === LATENT POSITION/VELOCITY FACTORS ===
+        # p(pos | prev pos, prev vel) = 1, so ignore
+        # p(vel | prev pos, prev vel) = uniform density sample (but also consider max speed)
+        uni_dist = torchUni.Uniform(-self.speed, self.speed)
+        for j in range(self.pop):
+            velX = zi[5*j+2]; velY = zi[5*j+3] # extract velocity in x/y from latent step
+            velX_prev = zprev[5*j+2]; velY_prev = zprev[5*j+3] # extract previous latent step velocities
+            for (v,u) in [(velX, velX_prev), (velY,velY_prev)]:
+                
+                if (abs(v) < self.people[0].max_speed): # fixed at 0.25 for all people
+                    p_zi_cond *= uni_dist.log_prob(abs(abs(v)-abs(u))) # abs(v)-abs(u) is the force that must've been applied
+                    # i.e. multiply by pdf evalutated at uniform-sampled value from this step
+                
+                else: # then v == 0.25 or -0.25, SPECIAL CASE
+                    # special since multiple uniform 'force' samples could've yielded this velocity value
+                    # because computed velocities >0.25 get capped at 0.25 (max_speed)
+                    min_force = abs(abs(v)-abs(u)) # minimum force that was applied to get v==(-)0.25
+                    p_v_given_u = ((self.speed - min_force)/self.speed)
+                    # update with nat.log of uniform probability that such a force was sampled
+                    p_zi_cond *= torch.log(torch.tensor([p_v_given_u]))
+        
+        # === LATENT INFECTION STATE FACTORS ===
+        # p(state | previous latents) is deterministic in all cases except:
+        # ...p(state==I | previous state==S, other latents)
+        # ...p(state==S | previous state==S, other latents => infectious person within radius)
+        states_curr = [zi[5*j+4] for j in range(self.people)]
+        states_prev = [zprev[5*j+4] for j in range(self.people)]
+        for j in range(self.people):
+            if (states_prev[j]==0): # if S -> I or S -> S
+                num_infected_in_range = 0;
+                for k in range(self.people):
+                    if (states_prev[k]==1): # if k is index of an infected person
+                        # check if within infection radius
+                        dist = np.linalg.norm([zprev[5*j], zprev[5*j+1]] - [zprev[5*k], zprev[5*k+1]])
+                        if (dist <= θ[1]):
+                            num_infected_in_range += 1;
+                # evaluate p(gets infected | some nearby infected people)
+                p_inf = self.p_infected(num_infected_in_range, θ[0])
+                if (states_curr[j]==1): # if person j DID get infected...
+                    p_zi_cond *= torch.log(torch.tensor([p_inf]));
+                else: # if person j DIDN'T get infected...
+                    p_zi_cond *= torch.log(torch.tensor([1-p_inf]));
 
         return p_zi_cond
-
-
-
+    
+    # internal function - evalutates p(gets infected | some nearby infected people)
+    def p_infected(self, n:int, p:float):
+        binom_dist = binom(n, p)
+        # returns 1 - p(0 transmissions to susceptible | 'n' nearby infected, 'p' prob. of transmission)
+        return 1-binom_dist.pmf(0)
 
 
 
