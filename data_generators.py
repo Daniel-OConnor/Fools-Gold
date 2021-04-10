@@ -13,7 +13,7 @@ def ratio_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_size, s
             k = 0 if random() < 0.5 else 1
             with torch.no_grad():
                 zs = sim.simulate(ts[k])
-            ratio = sim.eval_ratio(zs, ts[k], ts[(k + 1) % 2])
+                ratio = sim.eval_ratio(zs, ts[k], ts[(k + 1) % 2])
             data.append((k, ts, zs[-1], ratio))
     return DataLoader(data, batch_size, shuffle=shuffle)
 

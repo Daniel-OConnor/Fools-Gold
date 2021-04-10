@@ -13,6 +13,7 @@ from models.classifier import Classifier
 from models.density_mixture import DensityMixture
 from tqdm import tqdm
 import torch
+from torch import autograd
 from functools import partial
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -21,22 +22,22 @@ import matplotlib.pyplot as plt
 TRAIN = True
 # training constants
 batch_size = 20 #32
-epochs = 5
+epochs = 50
 train_fraction = 1
-num_priors = 400 #30000
+num_priors = 600 #30000
 num_sims_per_prior_pair = 1
 learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
-prior = lambda: torch.rand(3).to(device)
+prior = lambda: torch.tensor([0.3, 2, 14]).to(device) + torch.rand(3).to(device) * torch.tensor([0.01, 0.01, 0.01])
 sim = SIR_Sim()
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = DensityMixture(sim.x_size, sim.theta_size, 20, 200)
+model = Ratio(sim.x_size, sim.theta_size, 200)
 model.to(device)
 
 
@@ -44,11 +45,11 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
+    train_loader = ratio_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
     #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(scandal, alpha=3), epochs, optimizer)
+    train(model, train_loader, rolr, epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:

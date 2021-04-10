@@ -190,18 +190,17 @@ class SIR_Sim(ProbSimulator):
         ps[0] = ps[0] + math.log(1.0/float(self.pop))
         for i in range(1, len(zs)-1):
             ps[i] = self.p_latent_step(zs[i], zs[i-1], θ)
-
         return sum(ps)
     
     def p_latent_step(self,zi,zprev,θ):
         # zprev is the previous step's latent variables i.e. z_i-1
-        log_p_zi_cond = torch.tensor(0.) # initialise p(z_i|θ, z_i-1)
+        log_p_zi_cond = torch.tensor(0., requires_grad=True) # initialise p(z_i|θ, z_i-1)
         
         # === LATENT POSITION/VELOCITY FACTORS ===
         # p(pos | prev pos, prev vel) = 1, so ignore
         # p(vel | prev pos, prev vel) = uniform density sample (but also consider max speed)
         uni_dist = torchUni.Uniform(-self.speed, self.speed)
-        for j in range(self.pop):
+        """for j in range(self.pop):
             velX = zi[5*j+2]; velY = zi[5*j+3] # extract velocity in x/y from latent step
             velX_prev = zprev[5*j+2]; velY_prev = zprev[5*j+3] # extract previous latent step velocities
             for (v,u) in [(velX, velX_prev), (velY,velY_prev)]:
@@ -216,7 +215,7 @@ class SIR_Sim(ProbSimulator):
                     min_force = abs(abs(v)-abs(u)) # minimum force that was applied to get v==(-)0.25
                     p_v_given_u = ((self.speed - min_force)/self.speed)
                     # update with nat.log of uniform probability that such a force was sampled
-                    log_p_zi_cond = log_p_zi_cond + torch.log(p_v_given_u)
+                    log_p_zi_cond = log_p_zi_cond + torch.log(p_v_given_u)"""
         
         # === LATENT INFECTION STATE FACTORS ===
         # p(state | previous latents) is deterministic in all cases except:
@@ -233,21 +232,23 @@ class SIR_Sim(ProbSimulator):
                         dist = np.linalg.norm([zprev[5 * j] - zprev[5 * k], zprev[5 * j + 1] - zprev[5 * k + 1]])
                         if (dist <= θ[1]):
                             num_infected_in_range += 1
-                # evaluate p(gets infected | some nearby infected people)
-                p_inf = self.p_infected(num_infected_in_range, θ[0])
-                if (states_curr[j]==1): # if person j DID get infected...
-                    log_p_zi_cond = log_p_zi_cond + torch.log(p_inf);
-                else: # if person j DIDN'T get infected...
-                    log_p_zi_cond = log_p_zi_cond + torch.log(1-p_inf);
+                if num_infected_in_range > 0:
+                    # evaluate p(gets infected | some nearby infected people)
+                    p_inf = self.p_infected(num_infected_in_range, θ[0])
+                    if (states_curr[j]==1): # if person j DID get infected...
+                        log_p_zi_cond = log_p_zi_cond + p_inf
+                    else: # if person j DIDN'T get infected...
+                        log_p_zi_cond = log_p_zi_cond + torch.log(1 - torch.exp(p_inf))
+            None
         return log_p_zi_cond
     
     # internal function - evalutates p(gets infected | some nearby infected people)
     def p_infected(self, n, p):
         binom_dist = Binomial(n, p)
         # returns 1 - p(0 transmissions to susceptible | 'n' nearby infected, 'p' prob. of transmission)
-        return torch.logaddexp(torch.tensor(1.), 1/binom_dist.log_prob(torch.tensor(0.)))
-
-
+        p0 = binom_dist.log_prob(torch.tensor(0.))
+        out = torch.log(1 - torch.exp(p0))
+        return out
 
 
 #s = SIR_Sim();
