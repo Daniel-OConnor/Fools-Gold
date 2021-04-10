@@ -9,28 +9,30 @@ from torch.utils.data import DataLoader
 num_priors_total = 16 # EDIT
 num_workers = 4 # EDIT
 num_iterations = 2 # EDIT
-num_priors_per_iteration = num_priors_total // num_iterations
-
+prefix = "lv_data_" # EDIT
+extension = "pt" # EDIT
+save_loc = "lv_data" # EDIT
 prior = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.02) # EDIT
 sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) # EDIT
 
+num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")
 
 def foo(i):
     θ = prior().detach().requires_grad_()
     with torch.no_grad():
         zs = sim.simulate(θ)
-        logp_0 = sim.eval_ratio(zs, θ, ).detach()
+        logp_0 = sim.log_p(zs, θ).detach()
         logp_1 = sim.eval_ratio(zs, default_params).detach()
     score0 = sim.eval_score(zs, θ).detach()
     score1 = sim.eval_score(zs, default_params).detach()
     return (0, (θ, default_params), zs[-1], (score0, score1), (logp_0, logp_1))
 
-for i in range(num_iterations):
+for i in tqdm(range(num_iterations)):
     print("Iteration {} of {}...".format(i+1, num_iterations))
     with Pool(num_workers) as p:
-        dataset = list(tqdm(p.imap(foo, range(num_priors_per_iteration)), total=num_priors_per_iteration))
-    torch.save(dataset, 'lv_data_{}.pt'.format(i))
+        dataset = list(p.imap(foo, range(num_priors_per_iteration))
+    torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
 
 # EXAMPLE LOADING CODE
 
