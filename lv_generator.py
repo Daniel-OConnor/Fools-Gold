@@ -41,7 +41,7 @@ for i in save_iter:
     with Pool(num_workers) as p:
         res = list(p.imap(foo, range(num_priors_per_iteration)))
         dataset = [t for t in res if t is not None]
-        save_iter.set_description("Yield: {}".format(len(dataset)/len(res))
+        save_iter.set_description("Yield: {}".format(len(dataset)/len(res)))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
 
 # EXAMPLE LOADING CODE
