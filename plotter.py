@@ -90,7 +90,7 @@ class PlotHist(Plot):
     def plot(self, useRanges=True, useLabels=True):
         if (self.freqRange != None and useRanges): plt.ylim(freqRange)
         if (useLabels): self.assignLabels(True)
-        if (self.colour != ""): plt.plot(self.xs,bins=self.numBins,color=self.colour)
+        if (self.colour != ""): plt.bar(self.xs,self.ys,color=self.colour)
         else: plt.bar(self.xs,self.ys)
         #self.show(True)
 
