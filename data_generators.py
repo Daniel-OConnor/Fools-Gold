@@ -27,7 +27,7 @@ def score_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_size, s
             t = (t[0].detach().requires_grad_(),)
             with torch.no_grad():
                 zs = sim.simulate(t[0])
-            score = sim.eval_score(zs, t[0])
+            score = sim.eval_score(zs, t[0]).detach()
             data.append((0, t, zs[-1], score))
     return DataLoader(data, batch_size, shuffle=shuffle)
 
@@ -42,7 +42,7 @@ def score_pairs_dataset(sim, prior, num_priors, num_sims_per_prior_pair, batch_s
             k = 0 if random() < 0.5 else 1
             with torch.no_grad():
                 zs = sim.simulate(ts[k])
-            score = sim.eval_score(zs, ts[k])
+            score = sim.eval_score(zs, ts[k]).detach()
             data.append((k, ts, zs[-1], score))
     return DataLoader(data, batch_size, shuffle=shuffle)
 
@@ -57,7 +57,8 @@ def score_and_ratio_dataset(sim, prior, num_priors, num_sims_per_prior_pair, bat
             k = 0 if random() < 0.5 else 1
             with torch.no_grad():
                 zs = sim.simulate(ts[k])
-            score = sim.eval_score(zs, ts[k])
-            ratio = sim.eval_ratio(zs, ts[k], ts[(k + 1) % 2]).detach()
+            score = sim.eval_score(zs, ts[k]).detach()
+            with torch.no_grad():
+                ratio = sim.eval_ratio(zs, ts[k], ts[(k + 1) % 2]).detach()
             data.append((k, ts, zs[-1], score, ratio))
     return DataLoader(data, batch_size, shuffle=shuffle)
