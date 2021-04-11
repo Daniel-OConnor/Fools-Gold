@@ -24,4 +24,4 @@ def train(model, dataset, loss_function, epochs, optimizer):
             optimizer.step()
             num_samples += len(labels)
             epoch_loss += loss.item()
-            train_iter.set_description("Average loss {}".format(epoch_loss/num_samples))
+            train_iter.set_description("Average loss {:10.4f}".format(epoch_loss/num_samples))

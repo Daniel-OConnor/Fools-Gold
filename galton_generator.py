@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 num_priors_total = 100000
-num_workers = 1
+num_workers = 4
 num_iterations = 1000
 prefix = "galton_data_"
 extension = "pt"
