@@ -2,7 +2,6 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-
 def train(model, dataset, loss_function, epochs, optimizer):
     for i in range(epochs):
         print("Epoch {}...".format(i))
@@ -15,7 +14,6 @@ def train(model, dataset, loss_function, epochs, optimizer):
             labels, thetas, xs, *targets = batch
             y_hat = model(xs, *thetas)
             loss = loss_function(y_hat, labels, thetas, *targets)
-            model.zero_grad() # from what I've read, this SHOULDN'T delete the computation graph
             loss.backward()
             optimizer.step()
             num_samples += len(labels)

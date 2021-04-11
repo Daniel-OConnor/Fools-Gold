@@ -37,9 +37,12 @@ if TRAIN:
     # %% GENERATE DATA
     dataset = []
     print("Loading Data...")
-    saved_data = torch.load("../lv_data/lv_data_0_2929.pt")
+    file_name = "../lv_data/lv_data_0_2929.pt"
+    saved_data = torch.load(file_name)
     print("Preparing Data...")
+    sum_k = 0
     for (k, ts, x, scores, probs) in tqdm(saved_data):
+        sum_k += k
         ts[0].requires_grad_()
         ts[1].requires_grad_()
         x.requires_grad_()

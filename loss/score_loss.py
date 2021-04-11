@@ -3,15 +3,12 @@ import torch
 # Takes the derivative with respect to theta.
 # Used in multiple loss functions
 def paired_score_loss(input, labels, thetas, target_score):
-    index = labels.repeat(4, 1).t().unsqueeze(2)
-    stacked_thetas = torch.stack(thetas, dim=2)
-    selected_thetas = torch.gather(stacked_thetas, 2, index).squeeze()
-    selected_thetas.grad.zero_()
-    selected_thetas.retain_grad()
-    input.sum().backward(retain_graph=True)
-    theta_grad = selected_thetas.grad
-    v = torch.pow(selected_thetas - target_score, 2).sum()
-    selected_thetas.grad.zero_()
+    theta_grad = torch.autograd.grad(input.sum(), thetas, retain_graph=True, only_inputs=True)
+    theta_size = thetas[0].shape[1]
+    index = labels.repeat(theta_size, 1).t().unsqueeze(2)
+    stacked_grads = torch.stack(theta_grad, dim=2)
+    selected_grads = torch.gather(stacked_grads, 2, index).squeeze()
+    v = torch.pow(selected_grads - target_score, 2).sum()
     return torch.mean(v)
 
 def score_loss(input, thetas, target_score):
