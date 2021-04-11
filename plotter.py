@@ -12,7 +12,7 @@ from loss.scandal import prob
 class Plot:
     # can be instantiated with/without any of the optional parameters
     # optional args don't have to be given in order if stated explicitly
-    def __init__(self, xs:list=[], ys:list=[], colour:str="",
+    def __init__(self, xs=[], ys=[], colour:str="",
                 title:str="", xLabel:str="", yLabel:str="",
                 draw:bool=False):
         self.xs = xs; self.ys = ys; self.colour = colour
@@ -43,7 +43,7 @@ class Plot:
 
 class PlotLine(Plot):
     # subclass initialisation includes x/y-ranges for line graphs
-    def __init__(self, xs:list=[], ys:list=[], colour:str="",
+    def __init__(self, xs=[], ys=[], colour:str="",
                 title:str="", xLabel:str="", yLabel:str="",
                 xRange:tuple=None, yRange:tuple=None,
                 draw:bool=False):
@@ -61,7 +61,7 @@ class PlotLine(Plot):
 
 class PlotHist(Plot):
 
-    def __init__(self, xs:list=[], ys:list=[], colour:str="",
+    def __init__(self, xs=[], ys=[], colour:str="",
                 title:str="", xLabel:str="", yLabel:str="",
                 numBins:int=10, freqRange:tuple=None,
                 draw:bool=False):
