@@ -13,9 +13,9 @@ num_workers = 4
 num_iterations = 1000
 prefix = "galton_data_"
 extension = "pt"
-save_loc = "galton_data"
+save_loc = "galton_data2"
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-prior = lambda: torch.tensor([-0.5]).to(device) + torch.rand(1).to(device) * torch.tensor([1.])
+prior = lambda: torch.tensor([-0.7]).to(device) + torch.rand(1).to(device) * torch.tensor([.3])
 sim = GaltonBoard(10, 10)
 num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")

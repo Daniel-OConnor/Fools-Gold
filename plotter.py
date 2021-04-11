@@ -130,10 +130,8 @@ class PlotTrueRatioBars(PlotLine):
         visual_runs0 = [sim.simulate(theta0)[-1].cpu().detach().numpy()[0] for _ in tqdm(range(n))]
         visual_runs1 = [sim.simulate(theta1)[-1].cpu().detach().numpy()[0] for _ in tqdm(range(n))]
         xs = np.arange(start, end)
-        print(xs)
-        counts0 = [visual_runs0.count(x) for x in xs]
-        counts1 = [visual_runs1.count(x) for x in xs]
-        print(counts0, counts1)
+        counts0 = [visual_runs0.count(x)+0.01 for x in xs]
+        counts1 = [visual_runs1.count(x)+0.01 for x in xs]
         ratios = [counts0[i]/ counts1[i] for i in range(len(counts0))]
         super().__init__(xs, ratios, colour, title, xLabel, yLabel, xRange, yRange, draw)
 
@@ -177,8 +175,11 @@ class PlotClassifierNetwork(PlotLine):
                 colour:str="b", title:str="", xLabel:str="", yLabel:str="",
                 xRange:tuple=None, yRange:tuple=None, draw:bool=False):
         xs = np.linspace(start, end, steps)
-        density_pred = [1 / model(torch.tensor([[x]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32),
+        density_pred = [model(torch.tensor([[x]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32),
                               torch.tensor([[theta1]], dtype=torch.float32)) for x in xs]
+
+        density_pred = [(1 - x) / x for x in density_pred]
+
         super().__init__(xs, density_pred, colour,title,xLabel,yLabel,xRange,yRange,draw)
 
 
