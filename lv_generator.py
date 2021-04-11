@@ -6,6 +6,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
+start_num = 0
 num_priors_total = 16 # EDIT
 num_workers = 4 # EDIT
 num_iterations = 2 # EDIT
@@ -18,12 +19,11 @@ sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) # EDIT
 num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")
 
-def foo(i):
+def foo(label):
     try:
         θ_0 = prior().detach().requires_grad_()
         θ_1 = default_params.detach().requires_grad_() # prior().detach().requires_grad_()
         with torch.no_grad():
-            label = 0 if torch.rand(1) < 0.5 else 1
             if label == 1:
                 zs = sim.simulate(θ_1)
             else:
@@ -41,16 +41,20 @@ def foo(i):
     except:
         return None
 
-save_iter = tqdm(range(num_iterations))
+save_iter = tqdm(range(start_num, num_iterations))
 total_runs = 0
 saved_samples = 0
+
 for i in save_iter:
     with Pool(num_workers) as p:
-        res = list(p.imap(foo, range(num_priors_per_iteration)))
+        random_nums = torch.rand(num_priors_per_iteration)
+        labels = [1 if random_nums[i] > 0.5 else 0 for i in range(num_priors_per_iteration)]
+        num_defaults += sum(labels)
+        res = list(p.imap(foo, labels))
         total_runs += len(res)
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
-        save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
+        save_iter.set_description("Yield: {}, Default Fraction: {}".format(saved_samples/total_runs, num_defaults/total_runs))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
     del res, dataset
 
