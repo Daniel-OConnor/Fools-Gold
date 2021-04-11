@@ -2,19 +2,19 @@
 from simulators.dummy_simulator import DummySimulator
 from simulators import lotkavolterra
 from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
-from simulators.galton_board import GaltonBoard
+from simulators.sir_fg import SIR_Sim
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
-from loss.scandal import scandal, gaussian_mixture_prob, categorical_prob
+from loss.scandal import scandal, gaussian_mixture_prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
 from data_loaders import load_score_dataset
 from trainer import train
 from models.ratio import Ratio
 from models.classifier import Classifier
 from models.density_mixture import DensityMixture
-from models.categorical_distribution import CategoricalDistribution
 from tqdm import tqdm
 import torch
+from torch import autograd
 from functools import partial
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -22,23 +22,23 @@ import matplotlib.pyplot as plt
 
 TRAIN = True
 # training constants
-batch_size = 2 #32
-epochs = 5
+batch_size = 20 #32
+epochs = 50
 train_fraction = 1
-num_priors = 4000 #30000
+num_priors = 600 #30000
 num_sims_per_prior_pair = 1
 learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
-prior = lambda: ((torch.rand(1).to(device))*0.25)
-sim = GaltonBoard(10, 10)
+prior = lambda: torch.tensor([0.3, 2, 14]).to(device) + torch.rand(3).to(device) * torch.tensor([0.01, 0.01, 0.01])
+sim = SIR_Sim()
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = CategoricalDistribution(sim.bins, sim.theta_size, 100)
+model = Ratio(sim.x_size, sim.theta_size, 200)
 model.to(device)
 
 
@@ -51,7 +51,7 @@ if TRAIN:
     # test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(scandal, alpha=3, prob_func=categorical_prob), epochs, optimizer)
+    train(model, train_loader, rolr, epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:

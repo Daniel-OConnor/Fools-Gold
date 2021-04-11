@@ -41,7 +41,9 @@ class RatioSimulator(Simulator):
 
     def eval_ratio(self, zs, θ_0, θ_1):
         """returns r(x, zs | θ_0, θ_1)"""
-        return self.log_ratio(zs, θ_0, θ_1).exp()
+        ratio = self.log_ratio(zs, θ_0, θ_1)
+        out = ratio.exp()
+        return out
 
     def eval_score(self, zs, θ_0, θ_1):
         """
@@ -51,7 +53,7 @@ class RatioSimulator(Simulator):
             * ratio, r(x, zs | θ_0, θ_1)
         """
         log_ratio = self.log_ratio(zs, θ_0, θ_1)
-        g = torch.autograd.grad(log_p, θ_0)[0].detach()
+        g = torch.autograd.grad(log_ratio, θ_0)[0].detach()
         return g
 
 class ProbSimulator(RatioSimulator):
@@ -70,7 +72,9 @@ class ProbSimulator(RatioSimulator):
         raise NotImplementedError()
 
     def log_ratio(self, zs, θ_0, θ_1):
-        return (self.log_p(zs, θ_0) - self.log_p(zs, θ_1)).sum()
+        p1 = self.log_p(zs, θ_0)
+        p2 = self.log_p(zs, θ_1)
+        return (p1 - p2).sum()
 
     def eval_score(self, zs, θ):
         """
@@ -80,5 +84,5 @@ class ProbSimulator(RatioSimulator):
             * joint, p(x, zs | θ)
         """
         log_p = self.log_p(zs, θ)
-        g = torch.autograd.grad(log_p, θ)[0].detach()
+        g = torch.autograd.grad(log_p, θ, allow_unused=True)[0].detach()
         return g
