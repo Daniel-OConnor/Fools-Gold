@@ -1,15 +1,20 @@
 # %% SETUP
 from simulators.dummy_simulator import DummySimulator
+from simulators import lotkavolterra
+from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer
+from simulators.sir_fg import SIR_Sim
 from loss.rolr import rolr, rascal
 from loss.cascal import cascal
-from loss.scandal import scandal, prob
+from loss.scandal import scandal, gaussian_mixture_prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
+from data_loaders import load_score_dataset
 from trainer import train
 from models.ratio import Ratio
 from models.classifier import Classifier
 from models.density_mixture import DensityMixture
 from tqdm import tqdm
 import torch
+from torch import autograd
 from functools import partial
 import numpy as np
 from scipy.stats import gaussian_kde
@@ -17,34 +22,36 @@ import matplotlib.pyplot as plt
 
 TRAIN = True
 # training constants
-batch_size = 32
-epochs = 5
-train_fraction = 0.9
-num_priors = 30000
+batch_size = 20 #32
+epochs = 50
+train_fraction = 1
+num_priors = 600 #30000
 num_sims_per_prior_pair = 1
 learning_rate = 0.00001
 num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
+prior = lambda: torch.tensor([0.3, 2, 14]).to(device) + torch.rand(3).to(device) * torch.tensor([0.01, 0.01, 0.01])
+sim = SIR_Sim()
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-model = DensityMixture(1, 1, 20, 200)
+model = Ratio(sim.x_size, sim.theta_size, 200)
 model.to(device)
 
-prior = lambda: torch.rand(1).to(device)
-sim = DummySimulator()
+
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
-    #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
+    train_loader = load_score_dataset(20, 1000, "galton_data", "galton_data_")
+    #train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
+    # test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
-    train(model, train_loader, partial(scandal, alpha=3), epochs, optimizer)
+    train(model, train_loader, rolr, epochs, optimizer)
 
     torch.save(model.state_dict(), "model.pt")
 else:
@@ -59,7 +66,7 @@ else:
 # density_pred.covariance_factor = lambda : .01
 # density_pred._compute_covariance()
 
-
+"""
 theta0 = 0.2
 theta1 = 0.8
 # generate data for a single pair of thetas
@@ -77,12 +84,13 @@ density_true1._compute_covariance()
 
 _, mean, sd, weight = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta0]], dtype=torch.float32))
 #density_pred = [(1-x)/x for x in density_pred]
-density_pred = [prob(x, mean, sd, weight) for x in xs]
+with torch.no_grad():
+    density_pred = [torch.exp(gaussian_mixture_prob(torch.tensor(x, dtype=torch.float32), mean, sd, weight)) for x in xs]
 
 plt.plot(xs, density_true0(xs), "r")
 #plt.plot(xs, density_true0(xs), "y")
 #plt.plot(xs, density_true1(xs), "g")
 plt.plot(xs, density_pred, "b")
 plt.show()
-
+"""
 print("Done")
