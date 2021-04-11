@@ -49,9 +49,10 @@ saved_samples = 0
 for i in save_iter:
     with Pool(num_workers) as p:
         random_nums = torch.rand(num_samples_per_iteration)
-        labels = [(1, prior0(), prior1()) if random_nums[i] > 0.5 else 0 for i in range(num_samples_per_iteration)]
+        labels = [1 if random_nums[i] > 0.5 else 0 for i in range(num_samples_per_iteration)]
         num_defaults += sum(labels)
-        res = list(p.imap(foo, labels))
+        args = [(k, prior0(), prior1()) for k in labels]
+        res = list(p.imap(foo, args))
         total_runs += len(res)
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
