@@ -71,9 +71,9 @@ def load_score_and_ratio_dataset_(num_files, save_loc, prefix):
     dataset_loaded = load_dataset(num_files, save_loc, prefix)
     for (label, (t0, t1), x, (score0, score1), (logp_0, logp_1)) in dataset_loaded:
         if label == 0:
-            yield (label, (t0, t1), x, score0, logp_0/logp_1)
+            yield (label, (t0, t1), x, score0, torch.exp(logp_0-logp_1))
         else:
-            yield (label, (t0, t1), x, score1, logp_1/logp_0)
+            yield (label, (t0, t1), x, score1, torch.exp(logp_1-logp_0))
 
 
 def load_score_and_ratio_dataset(batch_size, num_files, save_loc, prefix):
