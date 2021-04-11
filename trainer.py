@@ -12,9 +12,9 @@ def train(model, dataset, loss_function, epochs, optimizer):
         for batch in train_iter:
             model.zero_grad()
             labels, thetas, xs, *targets = batch
-            batch_sz = xs.shape[0]
             y_hat = model(xs, *thetas)
-            loss = loss_function(y_hat, labels, thetas, *targets) * batch_sz
+            loss = loss_function(y_hat, labels, thetas, *targets)
+            model.zero_grad() # from what I've read, this SHOULDN'T delete the computation graph
             loss.backward()
             optimizer.step()
             num_samples += len(labels)

@@ -3,15 +3,16 @@ from loss.score_loss import paired_score_loss
 
 
 def rolr(input, labels, _, target):
-    v0 = torch.pow(target - input, 2)
-    v1 = torch.pow(target - (1/input), 2)
-    v2_0 = labels * v0
-    v2_1 = (1 - labels) * v1
-    return torch.mean(v2_0 + v2_1)
+    index = labels.unsqueeze(1)
+    stacked_inputs = torch.stack([input, 1/input], dim=1)
+    selected_inputs = torch.gather(stacked_inputs, 1, index).squeeze()
+    v = torch.pow(target - selected_inputs, 2)
+    return torch.mean(v)
 
 
-def rascal(input, labels, thetas, target_score, target_ratio, alpha):
-    log_ratio = torch.log(input)
+def rascal(input, labels, thetas, target_score, log_target_ratio, alpha):
+    log_pred_ratio = torch.log(input)
+    target_ratio = torch.exp(log_target_ratio)
     rolr_loss = rolr(input, labels, thetas, target_ratio)
-    score_loss = paired_score_loss(log_ratio, labels, thetas, target_score)
+    score_loss = paired_score_loss(log_pred_ratio, labels, thetas, target_score)
     return rolr_loss + alpha * score_loss
