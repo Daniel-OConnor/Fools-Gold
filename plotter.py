@@ -79,11 +79,11 @@ class PlotLine(Plot):
 
 class PlotHist(Plot):
 
-    def __init__(self, xs=[], numBins=10, colour:str="",
+    def __init__(self, xs=[], ys=[], colour:str="",
                 title:str="", xLabel:str="", yLabel:str="",
                 freqRange:tuple=None, draw:bool=False):
-        self.numBins = numBins; self.freqRange = freqRange
-        super().__init__(xs,None,colour,title,xLabel,yLabel,draw=draw)
+        self.freqRange = freqRange
+        super().__init__(xs,ys,colour,title,xLabel,yLabel,draw=draw)
 
     # plots histogram given instance info
     # assumes title/labels and x/y-ranges should be used if given (but can be overridden)
@@ -91,7 +91,7 @@ class PlotHist(Plot):
         if (self.freqRange != None and useRanges): plt.ylim(freqRange)
         if (useLabels): self.assignLabels(True)
         if (self.colour != ""): plt.plot(self.xs,bins=self.numBins,color=self.colour)
-        else: plt.hist(self.xs,bins=self.numBins)
+        else: plt.bar(self.xs,self.ys)
         #self.show(True)
 
 # This runs a simulator n times for parameter theta
@@ -169,7 +169,7 @@ class PlotCategoricalNetwork(PlotHist):
     def __init__(self, model, theta, start, end, steps,
                 colour:str="b", title:str="", xLabel:str="", yLabel:str="",
                 freqRange:tuple=None, draw:bool=False):
-        xs = np.linspace(start, end, steps)
+        xs = np.arange(start, end)
         _, probs = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta]], dtype=torch.float32))
         density_pred = [categorical_prob(x, probs) for x in xs]
-        super().__init__(density_pred, len(list(xs)), colour,title,xLabel,yLabel,freqRange,draw)
+        super().__init__(xs, density_pred, colour,title,xLabel,yLabel,freqRange,draw)
