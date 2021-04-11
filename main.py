@@ -7,6 +7,7 @@ from loss.rolr import rolr, rascal
 from loss.cascal import cascal
 from loss.scandal import scandal, gaussian_mixture_prob, categorical_prob
 from data_generators import ratio_dataset, score_and_ratio_dataset, score_pairs_dataset, score_dataset
+from data_loaders import load_score_dataset
 from trainer import train
 from models.ratio import Ratio
 from models.classifier import Classifier
@@ -45,8 +46,9 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 if TRAIN:
     # %% GENERATE DATA
 
-    train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
-    #test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
+    train_loader = load_score_dataset(20, 1000, "galton_data", "galton_data_")
+    #train_loader = score_dataset(sim, prior, num_train_priors, num_sims_per_prior_pair, batch_size, True)
+    # test_loader = ratio_dataset(sim, prior, num_test_priors, num_sims_per_prior_pair, batch_size, False)
 
     # %% TRAIN
     train(model, train_loader, partial(scandal, alpha=3, prob_func=categorical_prob), epochs, optimizer)
