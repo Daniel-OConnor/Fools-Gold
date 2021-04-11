@@ -71,8 +71,8 @@ class PlotLine(Plot):
     # plots line graph given instance info
     # assumes title/labels and x/y-ranges should be used if given (but can be overridden)
     def plot(self, useRanges=True, useLabels=True):
-        if (self.xRange != None and self.yRange != None and self.useRanges): plt.axis(list(self.xRange)+list(self.yRange))
-        if (self.useLabels): self.assignLabels(True)
+        if (self.xRange != None and self.yRange != None and useRanges): plt.axis(list(self.xRange)+list(self.yRange))
+        if (useLabels): self.assignLabels(True)
         if (self.colour != ""): plt.plot(self.xs,self.ys,color=self.colour)
         else: plt.plot(self.xs,self.ys)
         #self.show(True)
@@ -88,8 +88,8 @@ class PlotHist(Plot):
     # plots histogram given instance info
     # assumes title/labels and x/y-ranges should be used if given (but can be overridden)
     def plot(self, useRanges=True, useLabels=True):
-        if (self.freqRange != None and self.useRanges): plt.ylim(freqRange)
-        if (self.useLabels): self.assignLabels(True)
+        if (self.freqRange != None and useRanges): plt.ylim(freqRange)
+        if (useLabels): self.assignLabels(True)
         if (self.colour != ""): plt.plot(self.xs,bins=self.numBins,color=self.colour)
         else: plt.hist(self.xs,bins=self.numBins)
         #self.show(True)
@@ -168,8 +168,8 @@ class PlotCategoricalNetwork(PlotHist):
 
     def __init__(self, model, theta, start, end, steps,
                 colour:str="b", title:str="", xLabel:str="", yLabel:str="",
-                xRange:tuple=None, yRange:tuple=None, draw:bool=False):
+                freqRange:tuple=None, draw:bool=False):
         xs = np.linspace(start, end, steps)
         _, probs = model(torch.tensor([[0]], dtype=torch.float32), torch.tensor([[theta]], dtype=torch.float32))
         density_pred = [categorical_prob(x, probs) for x in xs]
-        super().__init__(density_pred, len(list(xs)), colour,title,xLabel,yLabel,xRange,yRange,draw)
+        super().__init__(density_pred, len(list(xs)), colour,title,xLabel,yLabel,freqRange,draw)
