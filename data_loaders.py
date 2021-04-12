@@ -12,7 +12,6 @@ class GenIterableDataset(torch.utils.data.IterableDataset):
 
 
 def load_dataset(num_files, save_loc, prefix):
-    dataset = []
     for i in range(num_files):
         saved_data = torch.load("{}/{}{}.pt".format(save_loc, prefix, i))
         for (label, (t0, t1), x, (score0, score1), (logp_0, logp_1)) in saved_data:
@@ -26,6 +25,12 @@ def load_dataset(num_files, save_loc, prefix):
         for row in saved_data:
             yield row
 
+
+def load_dataset_single(num_files, save_loc, prefix):
+    for i in range(num_files):
+        saved_data = torch.load("{}/{}{}.pt".format(save_loc, prefix, i))
+        for row in saved_data:
+            yield row
 
 def load_ratio_dataset_(num_files, save_loc, prefix):
     dataset_loaded = load_dataset(num_files, save_loc, prefix)

@@ -12,12 +12,22 @@ from loss.scandal import categorical_prob
 
 
 def ratio_kde(sim, theta0, theta1, n):
-    visual_runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(n))])
-    visual_runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(n))])
-    density_true0 = gaussian_kde(visual_runs0)
+    runs0 = np.array([sim.simulate(theta0)[1].cpu().detach().numpy() for _ in tqdm(range(n))])
+    runs1 = np.array([sim.simulate(theta1)[1].cpu().detach().numpy() for _ in tqdm(range(n))])
+    density_true0 = gaussian_kde(runs0)
     density_true0.covariance_factor = lambda: .05
     density_true0._compute_covariance()
-    density_true1 = gaussian_kde(visual_runs1)
+    density_true1 = gaussian_kde(runs1)
+    density_true1.covariance_factor = lambda: .05
+    density_true1._compute_covariance()
+    return lambda x: density_true0(x)/density_true1(x)
+
+
+def ratio_from_data(sim, runs0, runs1):
+    density_true0 = gaussian_kde([x[0].numpy() for x in runs0])
+    density_true0.covariance_factor = lambda: .05
+    density_true0._compute_covariance()
+    density_true1 = gaussian_kde([x[0].numpy() for x in runs1])
     density_true1.covariance_factor = lambda: .05
     density_true1._compute_covariance()
     return lambda x: density_true0(x)/density_true1(x)
@@ -111,6 +121,6 @@ def test_score_score(base_line, model, theta0, theta1, sim, n):
             base = base_line(x)
             _, mean0, sd0, w0 = model(torch.tensor([[x]]), torch.tensor([[theta0]]))
             _, mean1, sd1, w1 = model(torch.tensor([[x]]), torch.tensor([[theta1]]))
-            predicted = gaussian_mixture_prob(torch.tensor([[x]], mean0, sd0, w0)) / gaussian_mixture_prob(torch.tensor([[x]], mean1, sd1, w1))
+            predicted = gaussian_mixture_prob(torch.tensor([[x]]), mean0, sd0, w0) / gaussian_mixture_prob(torch.tensor([[x]]), mean1, sd1, w1)
             loss += (base - predicted.detach().numpy()) ** 2
     return loss/len(runs)
