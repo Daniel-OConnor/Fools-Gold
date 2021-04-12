@@ -225,7 +225,7 @@ class LotkaVolterra(ProbSimulator):
         j = 1
         for i in range(1, self.num_steps):
             sample_time = torch.Tensor([self.step_size * i])
-            j += torch.searchsorted(, sample_time)
+            j += torch.searchsorted(times[j:], sample_time)
             #while (j < num_data) and (pops[j, 0] <= sample_time):
             #    j += 1
             # pops[j, 1:] is the pop at the earliest time >= sample_time
