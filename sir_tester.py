@@ -37,14 +37,14 @@ num_train_priors = int(num_priors * train_fraction)
 num_test_priors = int(num_priors * (1-train_fraction))
 
 prior = lambda: torch.tensor([-0.7]).to(device) + torch.rand(1).to(device) * torch.tensor([.3])
-sim = SIR_Sim(10, 10)
+sim = SIR_Sim()
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-theta0 = torch.tensor([0.3])
-theta1 = torch.tensor([0.3003])
+theta0 = torch.tensor([0.3003])
+theta1 = torch.tensor([0.3])
 
 runs0 = []
 
