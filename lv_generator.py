@@ -5,11 +5,14 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 import concurrent.futures
+from sys import argv
+print(argv[1])
 torch.multiprocessing.set_sharing_strategy('file_system')
-start_num = 4002
-num_samples_total = 87150 # EDIT
+total_iters = 7634
+start_num = 7634 - argv[1]
 num_workers = 24 # EDIT
-num_iterations = 3632 # EDIT
+num_iterations = 3626 # EDIT
+num_samples_total = num_workers * num_iterations # EDIT
 prefix = "lv_data_" # EDIT
 extension = "pt" # EDIT
 save_loc = "lv_data" # EDIT "lv_test_data"
