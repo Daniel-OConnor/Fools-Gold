@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 torch_Tensor = torch.cuda.Tensor if torch.cuda.is_available() else torch.Tensor
 
-default_params = torch.Tensor([0.01, 2.5, 1, 0.01])
+default_params = torch.Tensor([0.01, 0.5, 1, 0.01])
 
 brehmer_means = torch.Tensor([1.04272841e+02, 7.92735828e+01, 8.56355494e+00, 8.11906932e+00,
             9.75067266e-01, 9.23352650e-01, 9.71107191e-01, 9.11167340e-01,
