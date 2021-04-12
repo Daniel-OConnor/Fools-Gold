@@ -16,7 +16,7 @@ class GaltonBoard(ProbSimulator):
     def __init__(self, row_count, nail_count):
         self.row_count = row_count
         self.nail_count = nail_count
-        self.bins = nail_count - 1 if row_count % 2 == 0 else nail_count-2
+        self.bins = nail_count if row_count % 2 == 0 else nail_count-1
 
     # https://github.com/johannbrehmer/goldmine/blob/master/goldmine/simulators/galton.py
     def nail_direction_chance(self, theta, row, nail):
@@ -32,21 +32,18 @@ class GaltonBoard(ProbSimulator):
         zs = []
         for row in range(self.row_count):
             nail_coefficient = self.nail_direction_chance(θ, row, nail)
-            max_nail = self.nail_count - 1 if row%2 == 0 else self.nail_count-2
-            if (random() < nail_coefficient and nail!=max_nail) or nail == 0:
-                zs.extend((1, torch.tensor([nail])))
+            if (random() < nail_coefficient and nail != (self.nail_count - 1)) or (row % 2 == 0 and nail == 0):
                 if row % 2 != 0:
                     nail += 1
+                zs.extend((1, torch.tensor([nail])))
             else:
-                zs.extend((0, torch.tensor([nail])))
                 if row % 2 == 0:
-                    nail -= 0
-        # Normalize output
-        zs.append(zs[-1])
+                    nail -= 1
+                zs.extend((0, torch.tensor([nail])))
         return zs
 
     def log_p(self, zs, θ):
-        assert len(zs) == 2*self.nail_count + 1
+        assert len(zs) == 2*self.nail_count
         output = torch.tensor(0., requires_grad=True)
         for row in range(self.row_count):
             nail = zs[2*row+1]

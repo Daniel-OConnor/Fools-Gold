@@ -21,7 +21,7 @@ def categorical_prob(x, bins):
     return bins[..., x]
 
 
-# prob_func calculates the probability of observing x under the parameters outputted from the model
+# prob_func calculates the log probability of observing x under the parameters outputted from the model
 def scandal(input, labels, thetas, target_score, alpha, prob_func):
     log_prob = prob_func(*input)
     return -torch.mean(log_prob) + alpha * score_loss(log_prob, thetas, target_score)

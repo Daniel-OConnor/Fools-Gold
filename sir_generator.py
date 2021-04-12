@@ -1,5 +1,5 @@
 from simulators import lotkavolterra
-from simulators.galton_board import GaltonBoard
+from simulators.sir_fg import SIR_Sim
 from data_generators import score_and_ratio_dataset
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -11,19 +11,20 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 num_priors_total = 100000
 num_workers = 4
 num_iterations = 1000
-prefix = "galton_data_"
+prefix = "sir_data_"
 extension = "pt"
-save_loc = "galton_data2"
+save_loc = "sir_data"
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-prior = lambda: torch.tensor([-0.7]).to(device) + torch.rand(1).to(device) * torch.tensor([.3])
-sim = GaltonBoard(10, 10)
+prior = lambda: torch.tensor([0.3]).to(device) + torch.rand(1).to(device) * torch.tensor([0.01])
+sim = SIR_Sim()
+default_params = torch.tensor([0.3])
 num_priors_per_iteration = num_priors_total // num_iterations
 print("Generating data...")
 
 def foo(i):
     try:
         θ_0 = prior().detach().requires_grad_()
-        θ_1 = prior().detach().requires_grad_() # prior().detach().requires_grad_()
+        θ_1 = default_params.detach().requires_grad_() # prior().detach().requires_grad_()
         with torch.no_grad():
             label = 0 if torch.rand(1) < 0.5 else 1
             if label == 1:

@@ -14,5 +14,5 @@ class CategoricalDistribution(torch.nn.Module):
         x1 = torch.relu(self.linear_H0(theta))
         x2 = torch.relu(self.linear_H1(x1))
         x3 = torch.relu(self.linear_H2(x2))
-        out = torch.softmax(x3, 1)
+        out = torch.log_softmax(self.linear_out(x3), 1)
         return x, out
