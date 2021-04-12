@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 start_num = 3945
 num_samples_total = 90750 # EDIT
 num_workers = 24 # EDIT
-num_iterations = 3630 # EDIT
+num_iterations = 3782 # EDIT
 prefix = "lv_data_" # EDIT
 extension = "pt" # EDIT
 save_loc = "lv_data" # EDIT "lv_test_data"
