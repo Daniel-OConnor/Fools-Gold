@@ -6,10 +6,10 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-start_num = 3945
-num_samples_total = 90750 # EDIT
+start_num = 3995
+num_samples_total = 89550 # EDIT
 num_workers = 24 # EDIT
-num_iterations = 3782 # EDIT
+num_iterations = 3732 # EDIT
 prefix = "lv_data_" # EDIT
 extension = "pt" # EDIT
 save_loc = "lv_data" # EDIT "lv_test_data"
@@ -46,8 +46,8 @@ save_iter = tqdm(range(start_num, num_iterations + start_num))
 total_runs = 0
 saved_samples = 0
 num_defaults = 0
-for i in save_iter:
-    with Pool(num_workers) as p:
+with Pool(num_workers) as p:
+    for i in save_iter:
         random_nums = torch.rand(num_samples_per_iteration)
         labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_per_iteration)]
         num_defaults += sum(labels)
