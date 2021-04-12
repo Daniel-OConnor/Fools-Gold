@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 
 start_num = 3945
-num_priors_total = 90750 # EDIT
+num_samples_total = 90750 # EDIT
 num_workers = 24 # EDIT
 num_iterations = 3630 # EDIT
 prefix = "lv_data_" # EDIT
@@ -48,8 +48,8 @@ saved_samples = 0
 num_defaults = 0
 for i in save_iter:
     with Pool(num_workers) as p:
-        random_nums = torch.rand(num_priors_per_iteration)
-        labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_priors_per_iteration)]
+        random_nums = torch.rand(num_samples_total)
+        labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_total)]
         num_defaults += sum(labels)
         args = [(k, prior0(), prior1()) for k in labels]
         res = list(p.imap(foo, args))
