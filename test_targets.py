@@ -25,11 +25,7 @@ def ratio_kde(sim, theta0, theta1, n):
 
 def ratio_from_data(sim, runs0, runs1):
     density_true0 = gaussian_kde([x[0].numpy() for x in runs0])
-    density_true0.covariance_factor = lambda: .05
-    density_true0._compute_covariance()
     density_true1 = gaussian_kde([x[0].numpy() for x in runs1])
-    density_true1.covariance_factor = lambda: .05
-    density_true1._compute_covariance()
     return lambda x: density_true0(x)/density_true1(x)
 
 
