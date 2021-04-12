@@ -5,7 +5,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 import concurrent.futures
-
+torch.multiprocessing.set_sharing_strategy('file_system')
 start_num = 4002
 num_samples_total = 87150 # EDIT
 num_workers = 24 # EDIT
