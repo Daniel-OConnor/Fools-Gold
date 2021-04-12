@@ -48,8 +48,8 @@ saved_samples = 0
 num_defaults = 0
 for i in save_iter:
     with Pool(num_workers) as p:
-        random_nums = torch.rand(num_samples_total)
-        labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_total)]
+        random_nums = torch.rand(num_samples_per_iteration)
+        labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_per_iteration)]
         num_defaults += sum(labels)
         args = [(k, prior0(), prior1()) for k in labels]
         res = list(p.imap(foo, args))
