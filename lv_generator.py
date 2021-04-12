@@ -16,11 +16,11 @@ save_loc = "lv_data" # EDIT "lv_test_data"
 prior0 = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.02).detach() # EDIT: e.g change this to some fixed value for generating test data
 prior1 = lambda: default_params.detach() # EDIT
 sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) # EDIT
-
 num_samples_per_iteration = num_samples_total // num_iterations
 print("Generating data...")
 
-def foo(label, prior0, prior1):
+def foo(args):
+    label, prior0, prior1 = args
     try:
         θ_0 = prior0.requires_grad_()
         θ_1 = prior1.requires_grad_()
@@ -45,13 +45,14 @@ def foo(label, prior0, prior1):
 save_iter = tqdm(range(start_num, num_iterations + start_num))
 total_runs = 0
 saved_samples = 0
-
+num_defaults = 0
 for i in save_iter:
     with Pool(num_workers) as p:
         random_nums = torch.rand(num_samples_per_iteration)
-        labels = [(1, prior0(), prior1()) if random_nums[i] > 0.5 else 0 for i in range(num_samples_per_iteration)]
+        labels = [1 if random_nums[i] > 0.5 else 0 for i in range(num_samples_per_iteration)]
         num_defaults += sum(labels)
-        res = list(p.imap(foo, labels))
+        args = [(k, prior0(), prior1()) for k in labels]
+        res = list(p.imap(foo, args))
         total_runs += len(res)
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)

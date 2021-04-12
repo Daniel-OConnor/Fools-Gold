@@ -123,6 +123,34 @@ class LotkaVolterra(ProbSimulator):
         self.num_steps = int(num_time_units / step_size) + 1 # include t=0
         self.normalisation_func = normalisation_func
 
+    def simulate_utopia(self, birth_rate, time, prey_pop):
+        total_extra_steps = 0
+        X_rand = torch.Tensor()
+        Y_all = torch.Tensor()
+        DT_CUMSUM = torch.Tensor()
+        multiplier = 1000
+        curr_time = time
+        while curr_time < self.num_time_units - .001:
+            est_num_steps = int(((self.num_time_units - curr_time) * multiplier))
+            multiplier *= 10
+            X_rand_local = torch.rand(est_num_steps) 
+            Y_all_local = torch.range(prey_pop + total_extra_steps, prey_pop + est_num_steps + total_extra_steps - 1) #
+            Y_rate = birth_rate * Y_all_local
+            DT = -(torch.log(1 - X_rand_local)/Y_rate)
+            DT_CUMSUM_local = torch.cumsum(DT, 0) + curr_time
+            end_idx = torch.searchsorted(DT_CUMSUM_local, self.num_time_units)
+            DT_CUMSUM_local = DT_CUMSUM_local[:end_idx]
+            X_rand_local = X_rand_local[:end_idx]
+            Y_all_local = Y_all_local[:end_idx]
+            curr_time = DT_CUMSUM_local[-1]
+            DT_CUMSUM = torch.cat([DT_CUMSUM, DT_CUMSUM_local])
+            X_rand = torch.cat([X_rand, X_rand_local])
+            Y_all = torch.cat([Y_all, Y_all_local])
+            total_extra_steps += end_idx
+        # X_rand, Y_all, and DT_CUMSUM should be populated
+        remaining_pops = torch.stack([DT_CUMSUM, torch.zeros(total_extra_steps), Y_all], dim=1)
+        return (remaining_pops, (X_rand, birth_rate, Y_all))
+
     def simulate(self, θ, epsilon=1e-9):
         """
         Perform a single run of the simulator
@@ -154,10 +182,15 @@ class LotkaVolterra(ProbSimulator):
         # simulation loop ("Pure Gillespie's algorithm")
         # see https://en.wikipedia.org/wiki/Gillespie_algorithm#Algorithm
         num_iterations = 0
+        extra = (None, None)
         while time < self.num_time_units:
             if num_iterations + 1 >= pops.shape[0]:
                 pops = torch.cat([pops, torch.zeros(pops.shape)])
             curr_state = pops[num_iterations]
+            if curr_state[1] == 0 and curr_state[2] > 0:
+                # all predators are dead, need to wrap things up quickly
+                extra = self.simulate_utopia(θ[2], time, curr_state[2])
+                break
             # Rates of different possible events
             rates = θ * torch.Tensor([curr_state[1] * curr_state[2],
                                       curr_state[1],
@@ -177,18 +210,23 @@ class LotkaVolterra(ProbSimulator):
             new_state = curr_state[1:] + reactions[next_reaction.item()]
             pops[num_iterations] = torch.cat([time, new_state])
         pops = pops[:num_iterations + 1]
-        return list(pops) + [summary_statistics(self.sample(pops), self.normalisation_func)]
+        return list(pops) + [extra[1]] + [summary_statistics(self.sample(pops, extra[0]), self.normalisation_func)]
 
-    def sample(self, pops: torch.Tensor) -> torch.Tensor:
+    def sample(self, _pops: torch.Tensor, extra: torch.Tensor) -> torch.Tensor:
         # sampling loop
+        if extra is None:
+            pops = _pops
+        else:
+            pops = torch.cat([_pops, extra])
         num_data = pops.shape[0]
         zs = torch.zeros((self.num_steps, 2))
         zs[0] = pops[0, 1:]
         j = 1
         for i in range(1, self.num_steps):
-            sample_time = self.step_size * i
-            while (j < num_data) and (pops[j, 0] <= sample_time):
-                j += 1
+            sample_time = torch.Tensor([self.step_size * i])
+            j += torch.searchsorted(pops[j:, 0], sample_time)
+            #while (j < num_data) and (pops[j, 0] <= sample_time):
+            #    j += 1
             # pops[j, 1:] is the pop at the earliest time >= sample_time
             zs[i] = pops[j - 1, 1:]
         zs[-1] = pops[-1, 1:] # to get the final population values
@@ -208,7 +246,7 @@ class LotkaVolterra(ProbSimulator):
         ps = torch.zeros(len(zs) - 1)
         ps[0] = 0 # 1 # initial state
         reaction_lookup = {(0, -1): 3, (1, 0): 0, (-1, 0): 1, (0, 1): 2}
-        for i in range(1, len(zs) - 1):
+        for i in range(1, len(zs) - 2):
             curr_state = zs[i]
             prev_state = zs[i - 1]
             # calculate probability of event
@@ -228,6 +266,9 @@ class LotkaVolterra(ProbSimulator):
             prob_event = rates[reaction_idx] / total_rate
             # calculate probability of time
             delta_t = curr_state[0] - prev_state[0]
-            prob_time = total_rate * torch.exp(-delta_t * total_rate)
+            # prob_time = total_rate * torch.exp(-delta_t * total_rate)
             ps[i] = prob_event.log() + total_rate.log() - (delta_t * total_rate)
+        if zs[-2] is not None:
+            X_rand, orig_theta2, Y_all_local = zs[-2]
+            ps[-1] = (θ[2] * Y_all_local).log().sum() + (1-X_rand).log().sum() * (θ[2]/orig_theta2)
         return ps.sum()
