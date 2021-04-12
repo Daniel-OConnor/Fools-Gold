@@ -58,8 +58,8 @@ with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as worker_p
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
         save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
-    torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
-    del res, dataset
+        torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
+        del res, dataset
 
 # EXAMPLE LOADING CODE
 
