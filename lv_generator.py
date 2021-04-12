@@ -1,15 +1,15 @@
 from simulators import lotkavolterra
 from simulators.lotkavolterra import LotkaVolterra, normalisation_func_brehmer, default_params
 from data_generators import score_and_ratio_dataset
-from multiprocessing import Pool
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
+import concurrent.futures
 
-start_num = 3995
-num_samples_total = 89550 # EDIT
+start_num = 4002
+num_samples_total = 87150 # EDIT
 num_workers = 24 # EDIT
-num_iterations = 3732 # EDIT
+num_iterations = 3632 # EDIT
 prefix = "lv_data_" # EDIT
 extension = "pt" # EDIT
 save_loc = "lv_data" # EDIT "lv_test_data"
@@ -45,18 +45,19 @@ def foo(args):
 save_iter = tqdm(range(start_num, num_iterations + start_num))
 total_runs = 0
 saved_samples = 0
-num_defaults = 0
-with Pool(num_workers) as p:
+
+random_nums = torch.rand(num_samples_total)
+labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_total)]
+args = [(k, prior0(), prior1()) for k in labels]
+with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as worker_pool: 
+    futures = [worker_pool.submit(foo, arg) for arg in args]
+    results_iterator = concurrent.futures.as_completed(futures)
     for i in save_iter:
-        random_nums = torch.rand(num_samples_per_iteration)
-        labels = [1 if random_nums[i] > 1.0 else 0 for i in range(num_samples_per_iteration)]
-        num_defaults += sum(labels)
-        args = [(k, prior0(), prior1()) for k in labels]
-        res = list(p.imap(foo, args))
+        res = [results_iterator.__next__().result() for i in range(num_samples_per_iteration)]
         total_runs += len(res)
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
-        save_iter.set_description("Yield: {}, count(prior1)/total: {}".format(saved_samples/total_runs, num_defaults/total_runs))
+        save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
     del res, dataset
 
