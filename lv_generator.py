@@ -9,9 +9,9 @@ from sys import argv
 print(argv[1])
 torch.multiprocessing.set_sharing_strategy('file_system')
 total_iters = 7634
-start_num = 7634 - argv[1]
+start_num = int(argv[1])
 num_workers = 24 # EDIT
-num_iterations = 3626 # EDIT
+num_iterations = 7634 - start_num # EDIT
 num_samples_total = num_workers * num_iterations # EDIT
 prefix = "lv_data_" # EDIT
 extension = "pt" # EDIT
