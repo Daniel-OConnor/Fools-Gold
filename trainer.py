@@ -27,7 +27,7 @@ def train(model, dataset, loss_function, i, optimizer):
         else:
             raise TypeError(str(xs)+"is neither a tensor or list")
         if len(targets) == 1:
-            targets = (targets[0].to(device))
+            targets = (targets[0].to(device),)
         else:
             targets = (targets[0].to(device), targets[1].to(device))
         y_hat = model(xs, *thetas)

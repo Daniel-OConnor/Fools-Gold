@@ -32,7 +32,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-training_info = {"base": {"x_size": 9, "theta_size": 4, "optimizer": torch.optim.Adam, "learning_rate": 0.001}}
+training_info = {"base": {"x_size": 9, "theta_size": 4, "optimizer": torch.optim.Adam, "lr": 0.001}}
 training_info["rolr"] = training_info["base"].copy()
 training_info["rolr"].update({"model" : lambda: Ratio(9, 4, 50), "hidden_size": 50, "loader": load_ratio_dataset, "loss": rolr})
 
@@ -68,8 +68,8 @@ for experiment in experiments:
             name = "{}_{}_{}".format(experiment, str(data_size), str(model_id))
             model = training_info[experiment]["model"]()
             model.to(device)
-            optimizer = training_info[experiment]["optimizer"]
-            train_loader = training_info[experiment]["loader"](32, "../training/data_all_{}.pt".format(data_size))
+            optimizer = training_info[experiment]["optimizer"](model.parameters(), lr=training_info[experiment]["lr"])
+            train_loader = training_info[experiment]["loader"](32, "/mnt/c/Users/Faiz/Desktop/lv_data/data_all_{}.pt".format(data_size))
             for i in range(epochs):
                 train(model, train_loader, training_info[experiment]["loss"], i, optimizer)
             torch.save(model.state_dict(), "models/{}/{}.pt".format(experiment, name))
