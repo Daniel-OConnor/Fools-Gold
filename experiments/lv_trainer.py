@@ -16,7 +16,7 @@ from pathlib import Path
 from sys import argv
 
 if len(argv) > 1:
-    start_from = argv[1]
+    start_from = int(argv[1])
 else:
     start_from = 0
 
