@@ -24,7 +24,6 @@ from test_targets import *
 
 # training constants
 name = "sir_test_losses.pt"
-TRAIN = True
 batch_size = 20 #32
 epochs = 2
 average = 5
@@ -48,15 +47,14 @@ theta1 = torch.tensor([0.3])
 
 runs0 = []
 
-for x in load_dataset_single(1, "sir_data_single", "sir_data_"):
+for x in load_dataset_single(500, "sir_data_single", "sir_data_"):
     runs0.append(x)
 
 runs1 = []
 
-for (label, (t0, t1), x, (score0, score1), (logp_0, logp_1)) in load_dataset(1, "sir_data", "sir_data_"):
-    if label == 0:
+for (label, (t0, t1), x, (score0, score1), (logp_0, logp_1)) in load_dataset(1000, "sir_data", "sir_data_"):
+    if label == 1:
         runs1.append(x)
-
 baseline = ratio_from_data(sim, runs0, runs1)
 #test_losses = torch.load(name)
 #print(test_losses)
@@ -69,7 +67,7 @@ for size in range(10, max_samples, 10):
         model = Ratio(sim.x_size, sim.theta_size, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_ratio_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_ratio_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, rolr, i, optimizer)
@@ -85,7 +83,7 @@ for size in range(10, max_samples, 10):
         model = Ratio(sim.x_size, sim.theta_size, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_score_and_ratio_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_score_and_ratio_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, partial(rascal, alpha=1), i, optimizer)
@@ -101,7 +99,7 @@ for size in range(10, max_samples, 10):
         model = Classifier(sim.x_size, sim.theta_size, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_score_pairs_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_score_pairs_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, partial(cascal, alpha=1), i, optimizer)
@@ -117,7 +115,7 @@ for size in range(10, max_samples, 10):
         model = Classifier(sim.x_size, sim.theta_size, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_score_pairs_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_score_pairs_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, xe, i, optimizer)
@@ -134,7 +132,7 @@ for size in range(10, max_samples, 10):
         model = DensityMixture(sim.x_size, sim.theta_size, 10, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_score_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_score_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, partial(cross_entropy, prob_func=gaussian_mixture_prob), i, optimizer)
@@ -150,7 +148,7 @@ for size in range(10, max_samples, 10):
         model = DensityMixture(sim.x_size, sim.theta_size, 10, 50)
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader = load_score_dataset(20, size, "galton_data2", "galton_data_")
+        train_loader = load_score_dataset(20, size, "sir_data", "sir_data_")
         for i in range(epochs):
             # %% TRAIN
             train(model, train_loader, partial(scandal, alpha=1, prob_func=gaussian_mixture_prob), i, optimizer)
@@ -165,7 +163,10 @@ with torch.no_grad():
     #plotter.PlotTrueRatioBars(sim, theta0, theta1, 0, 10, 11, 10000).plot()
     for name, data in test_losses.items():
         plt.plot(list(range(1000, 20000, 1000)), data, label=name)
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left", fontsize=15)
+    plt.ylabel("Mean squared error between true and predicted r", fontsize=15)
+    plt.xlabel("Number of training samples", fontsize=15)
+    plt.title("SIR Simulator Results", fontsize=20)
 #plt.plot(xs, density_true1(xs), "g")
 plt.show()
 print("Done")

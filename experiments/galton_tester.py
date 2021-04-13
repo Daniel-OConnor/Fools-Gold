@@ -23,9 +23,9 @@ import plotter
 from test_targets import *
 
 # training constants
-TRAIN = True
+name = "lv_test_losses.pt"
 batch_size = 20 #32
-epochs = 2
+epochs = 4
 average = 5
 train_fraction = 1
 num_priors = 4000 #30000
@@ -43,14 +43,16 @@ if torch.cuda.is_available():
 
 theta0 = torch.tensor(-0.6)
 theta1 = torch.tensor(-0.8)
+test_losses = torch.load("test_losses.pt")
 
 baseline = ratio_hist(sim, theta0, theta1, 100000, 0, 10)
-test_losses = torch.load("test_losses.pt")
+
 #print(test_losses)
 #test_losses = {}
 
+
 test_losses["rolr"] = []
-for size in range(10, 200, 10):
+for size in range(100, 200, 10):
     test = 0
     for _ in range(average):
         model = Ratio(sim.x_size, sim.theta_size, 50)
@@ -64,7 +66,7 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["rolr"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
 test_losses["rascal"] = []
 for size in range(10, 200, 10):
     test = 0
@@ -80,7 +82,8 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["rascal"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
+
 test_losses["cascal"] = []
 for size in range(10, 200, 10):
     test = 0
@@ -96,7 +99,7 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["cascal"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
 test_losses["LRT"] = []
 for size in range(10, 200, 10):
     test = 0
@@ -112,7 +115,7 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["LRT"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
 
 test_losses["NDE"] = []
 for size in range(10, 200, 10):
@@ -129,7 +132,7 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["NDE"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
 test_losses["scandal"] = []
 for size in range(10, 200, 10):
     test = 0
@@ -145,14 +148,17 @@ for size in range(10, 200, 10):
     print("test loss: ", test)
     test_losses["scandal"].append(test/average)
 
-torch.save(test_losses, "test_losses.pt")
+torch.save(test_losses, name)
 
 with torch.no_grad():
     #plotter.PlotClassifierNetwork(model, theta0, theta1, 0, 10, 100).plot()
     #plotter.PlotTrueRatioBars(sim, theta0, theta1, 0, 10, 11, 10000).plot()
     for name, data in test_losses.items():
         plt.plot(list(range(1000, 20000, 1000)), data, label=name)
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left", fontsize=15)
+    plt.ylabel("Mean squared error between true and predicted r", fontsize=15)
+    plt.xlabel("Number of training samples", fontsize=15)
+    plt.title("Galton Simulator Results", fontsize=20)
 #plt.plot(xs, density_true1(xs), "g")
 plt.show()
 print("Done")
