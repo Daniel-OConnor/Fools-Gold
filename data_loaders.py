@@ -33,7 +33,7 @@ def load_ratio_dataset_(path):
 
 
 def load_ratio_dataset(batch_size, path):
-    return DataLoader(GenIterableDataset(partial(load_ratio_dataset_, num_files, save_loc, prefix)), batch_size)
+    return DataLoader(GenIterableDataset(partial(load_ratio_dataset_, path)), batch_size)
 
 
 def load_score_dataset_(path):
@@ -46,7 +46,7 @@ def load_score_dataset_(path):
 
 
 def load_score_dataset(batch_size, path):
-    return DataLoader(GenIterableDataset(partial(load_score_dataset_, num_files, save_loc, prefix)), batch_size)
+    return DataLoader(GenIterableDataset(partial(load_score_dataset_, path)), batch_size)
 
 
 def load_score_pairs_dataset_(path):
@@ -59,7 +59,7 @@ def load_score_pairs_dataset_(path):
 
 
 def load_score_pairs_dataset(batch_size, path):
-    return DataLoader(GenIterableDataset(partial(load_score_pairs_dataset_, num_files, save_loc, prefix)), batch_size)
+    return DataLoader(GenIterableDataset(partial(load_score_pairs_dataset_, path)), batch_size)
 
 
 def load_score_and_ratio_dataset_(path):
@@ -72,4 +72,4 @@ def load_score_and_ratio_dataset_(path):
 
 
 def load_score_and_ratio_dataset(batch_size, path):
-    return DataLoader(GenIterableDataset(partial(load_score_and_ratio_dataset_, num_files, save_loc, prefix)), batch_size)
+    return DataLoader(GenIterableDataset(partial(load_score_and_ratio_dataset_, path)), batch_size)
