@@ -6,24 +6,25 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 
-num_priors_total = 16 # EDIT
+start_num = 0
+num_samples_total = 16 # EDIT
 num_workers = 4 # EDIT
 num_iterations = 2 # EDIT
-prefix = "lv_data_" # EDIT
+prefix = "lv_data_" # EDIT "lv_test_data_"
 extension = "pt" # EDIT
-save_loc = "lv_data" # EDIT
-prior = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.02) # EDIT
+save_loc = "lv_data" # EDIT "lv_test_data"
+prior0 = lambda: lotkavolterra.generate_prior(torch.rand(4), width=0.02).detach() # EDIT: e.g change this to some fixed value for generating test data
+prior1 = lambda: default_params.detach() # EDIT
 sim = LotkaVolterra(normalisation_func=normalisation_func_brehmer) # EDIT
 
-num_priors_per_iteration = num_priors_total // num_iterations
+num_samples_per_iteration = num_samples_total // num_iterations
 print("Generating data...")
 
-def foo(i):
+def foo(label, prior0, prior1):
     try:
-        θ_0 = prior().detach().requires_grad_()
-        θ_1 = default_params.detach().requires_grad_() # prior().detach().requires_grad_()
+        θ_0 = prior0.requires_grad_()
+        θ_1 = prior1.requires_grad_()
         with torch.no_grad():
-            label = 0 if torch.rand(1) < 0.5 else 1
             if label == 1:
                 zs = sim.simulate(θ_1)
             else:
@@ -41,16 +42,21 @@ def foo(i):
     except:
         return None
 
-save_iter = tqdm(range(num_iterations))
+save_iter = tqdm(range(start_num, num_iterations + start_num))
 total_runs = 0
 saved_samples = 0
+
 for i in save_iter:
     with Pool(num_workers) as p:
-        res = list(p.imap(foo, range(num_priors_per_iteration)))
+        random_nums = torch.rand(num_samples_per_iteration)
+        labels = [1 if random_nums[i] > 0.5 else 0 for i in range(num_samples_per_iteration)]
+        num_defaults += sum(labels)
+        args = [(k, prior0(), prior1()) for k in labels]
+        res = list(p.imap(foo, args))
         total_runs += len(res)
         dataset = [t for t in res if t is not None]
         saved_samples += len(dataset)
-        save_iter.set_description("Yield: {}".format(saved_samples/total_runs))
+        save_iter.set_description("Yield: {}, count(prior1)/total: {}".format(saved_samples/total_runs, num_defaults/total_runs))
     torch.save(dataset, "{}/{}{}.{}".format(save_loc, prefix, i, extension))
     del res, dataset
 
