@@ -64,6 +64,7 @@ for experiment in experiments:
         for model_id in range(10):
             pbar.update(1)
             if num_completed < start_from:
+                num_completed += 1
                 continue
             name = "{}_{}_{}".format(experiment, str(data_size), str(model_id))
             model = training_info[experiment]["model"]()
