@@ -24,7 +24,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-training_info = {"base": {"x_size": 9, "theta_size": 4, "optimizer": torch.optim.Adam, "learning_rate": 0.001}
+training_info = {"base": {"x_size": 9, "theta_size": 4, "optimizer": torch.optim.Adam, "learning_rate": 0.001}}
 
 training_info["rolr"].update("model" = lambda: Ratio(9, 4, 50), "hidden_size": 50, "loader": load_ratio_dataset, "loss"= rolr)
 
