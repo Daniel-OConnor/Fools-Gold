@@ -15,8 +15,13 @@ from functools import partial
 from pathlib import Path
 from sys import argv
 
-if len(argv) > 1:
+experiments = ["rolr", "rascal", "cascal", "scandal", "scandal2", "LRT", "NDE"]
+
+if len(argv) > 2:
     start_from = int(argv[1])
+    stop_at = int(argv[2])
+elif len(argv) == 2:
+    experiment = argv[1]
 else:
     start_from = 0
 
@@ -26,7 +31,7 @@ epochs = 2
 average = 10
 train_fraction = 1
 learning_rate = 0.001
-experiments = ["rolr", "rascal", "cascal", "scandal", "scandal2", "LRT", "NDE"]
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
@@ -66,6 +71,8 @@ for experiment in experiments:
             if num_completed < start_from:
                 num_completed += 1
                 continue
+            if num_completed > stop_at:
+                exit()
             name = "{}_{}_{}".format(experiment, str(data_size), str(model_id))
             model = training_info[experiment]["model"]()
             model.to(device)
