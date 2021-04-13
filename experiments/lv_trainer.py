@@ -17,13 +17,17 @@ from sys import argv
 
 experiments = ["rolr", "rascal", "cascal", "scandal", "scandal2", "LRT", "NDE"]
 
+start_from = 0
+stop_at = 490
+
 if len(argv) > 2:
     start_from = int(argv[1])
     stop_at = int(argv[2])
 elif len(argv) == 2:
     experiment = argv[1]
-else:
-    start_from = 0
+    experiments = [experiment]
+
+
 
 # training constants
 batch_size = 32 #32
@@ -31,7 +35,6 @@ epochs = 2
 average = 10
 train_fraction = 1
 learning_rate = 0.001
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 if torch.cuda.is_available():
@@ -61,14 +64,15 @@ training_info["scandal2"].update({"loss": partial(scandal, alpha=0.01, prob_func
 
 
 dataset_sizes = [1000, 2000, 5000, 10000, 20000, 50000, 100000]
-pbar = tqdm(total = 490)
+pbar = tqdm(total = 70*len(experiments))
 num_completed = 0
 for experiment in experiments:
     Path("models/{}".format(experiment)).mkdir(parents=True, exist_ok=True)
     for data_size in dataset_sizes:
+        pbar.set_description("{}, data size: {}".format(experiment, data_size))
         for model_id in range(10):
             pbar.update(1)
-            if num_completed < start_from:
+            if num_completed < start_from and start_from != 0:
                 num_completed += 1
                 continue
             if num_completed > stop_at:

@@ -15,7 +15,7 @@ def train(model, dataset, loss_function, i, optimizer):
         if isinstance(thetas, torch.Tensor):
             thetas = thetas.to(device)
         elif isinstance(thetas, list) or isinstance(thetas, tuple):
-            thetas = (thetas[0].to(device), thetas[1].to(device))
+            thetas = tuple([subtheta.to(device) for subtheta in thetas])
         else:
             raise TypeError(str(thetas)+"is neither a tensor or list")
         # labels = labels.to(device)
