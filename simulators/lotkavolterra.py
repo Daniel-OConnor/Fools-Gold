@@ -1,6 +1,6 @@
 import torch
 # from simulator import ProbSimulator
-from simulators.simulator import ProbSimulator
+from simulator import ProbSimulator
 from tqdm import tqdm
 
 torch_Tensor = torch.cuda.Tensor if torch.cuda.is_available() else torch.Tensor
@@ -180,6 +180,7 @@ class LotkaVolterra(ProbSimulator):
         # see https://en.wikipedia.org/wiki/Gillespie_algorithm#Algorithm
         num_iterations = 0
         extra = (torch.Tensor([0]), torch.Tensor([0]), torch.Tensor([0]))
+        # pbar = tqdm(total=30.0)
         while time < self.num_time_units:
             if num_iterations + 1 >= pops.shape[0]:
                 pops = torch.cat([pops, torch.zeros(pops.shape)])
@@ -208,6 +209,7 @@ class LotkaVolterra(ProbSimulator):
             # sampling exponential distribution with rate (parameter) = total_rate
             delta_t = -(torch.log(1 - torch.rand(1))/total_rate)
             time += delta_t
+            # pbar.update(delta_t.item())
             next_reaction = sample_discrete(rates)
             new_state = curr_state[1:] + reactions[next_reaction.item()]
             pops[num_iterations] = torch.cat([time, new_state])
@@ -232,6 +234,7 @@ class LotkaVolterra(ProbSimulator):
             j += torch.searchsorted(times[j:], sample_time)
             zs[i] = pops[j - 1, 1:]
         zs[-1] = pops[-1, 1:] # to get the final population values
+        # visualise(zs)
         return zs
 
     def log_p(self, zs, θ):
@@ -276,3 +279,20 @@ class LotkaVolterra(ProbSimulator):
         #     orig_theta2, X_rand, Y_all_local = zs[-4:-1]
         #     ps[-1] = (θ[2] * Y_all_local).log().sum() + (1-X_rand).log().sum() * (θ[2]/orig_theta2)
         return ps.sum()
+
+import matplotlib.pyplot as plt
+def visualise(zs):
+    predators = zs[:, 0]
+    prey = zs[:, 1]
+    plt.xlabel('Time')
+    plt.ylabel('Population')
+    plt.plot(torch.arange(0, 30.2, 0.2), predators, 'r', label='Predators')
+    plt.plot(torch.arange(0, 30.2, 0.2), prey, 'b', label='Prey')
+    plt.legend()
+    plt.show()
+    plt.xlabel('Time')
+    plt.ylabel('Population')
+    plt.plot(torch.arange(0, 30.2, 0.2), predators, label='Predators')
+    plt.plot(torch.arange(0, 30.2, 0.2), prey, label='Prey')
+    plt.legend()
+    plt.show()
