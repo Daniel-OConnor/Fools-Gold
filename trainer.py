@@ -12,7 +12,12 @@ def train(model, dataset, loss_function, i, optimizer):
     epoch_loss, num_samples = 0.0, 0
     for batch in train_iter:
         labels, thetas, xs, *targets = batch
-        thetas = thetas.to(device)
+        if isinstance(thetas, torch.Tensor):
+            thetas = thetas.to(device)
+        elif isinstance(thetas, list) or isinstance(thetas, tuple):
+            thetas = (thetas[0].to(device), thetas[1].to(device))
+        else:
+            raise TypeError(str(thetas)+"is neither a tensor or list")
         # labels = labels.to(device)
         if isinstance(xs, torch.Tensor):
             batch_sz = xs.shape[0]
