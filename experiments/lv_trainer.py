@@ -57,7 +57,7 @@ for experiments in experiments:
             model = training_info[experiment]["model"]()
             model.to(device)
             optimizer = training_info[experiment]["optimizer"].to(device)
-            train_loader = training_info[experiment]["loader"](32, "data_all_{}.pt".format(data_size))
+            train_loader = training_info[experiment]["loader"](32, "../training/data_all_{}.pt".format(data_size))
             for i in range(epochs):
                 train(model, train_loader, training_info[experiment]["loss"], i, optimizer)
             torch.save(model.state_dict(), "models/{}/{}.pt".format(experiment, name))
