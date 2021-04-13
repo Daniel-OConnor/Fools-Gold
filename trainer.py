@@ -7,7 +7,7 @@ if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 def train(model, dataset, loss_function, i, optimizer):
-    train_iter = tqdm(dataset)
+    train_iter = dataset
     model.train()
     epoch_loss, num_samples = 0.0, 0
     for batch in train_iter:
@@ -37,4 +37,4 @@ def train(model, dataset, loss_function, i, optimizer):
         optimizer.step()
         num_samples += len(labels)
         epoch_loss += loss.item()
-        train_iter.set_description("Average loss {:10.4f}".format(epoch_loss/num_samples))
+        # train_iter.set_description("Average loss {:10.4f}".format(epoch_loss/num_samples))
